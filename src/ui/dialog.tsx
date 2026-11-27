@@ -2,6 +2,7 @@
    che in alcuni ambienti (pannelli incorporati, iframe) sono bloccati e restituiscono subito "annulla". */
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Risk } from '../site/model';
+import { t } from '../i18n';
 
 export interface DialogField { key: string; label: string; value?: string; type?: 'text' | 'number' | 'textarea'; placeholder?: string; required?: boolean }
 export interface DialogRequest { title: string; message?: ReactNode; fields?: DialogField[]; ok?: string; cancel?: string; danger?: boolean }
@@ -46,8 +47,8 @@ export function DialogProvider({ children }: { children: ReactNode }) {
               </label>
             ))}
             <div className="row-btns">
-              <button type="submit" ref={okRef} className={req.danger ? 'danger on' : 'on'} disabled={missing}>{req.ok ?? 'OK'}</button>
-              <button type="button" onClick={() => close(null)}>{req.cancel ?? 'Annulla'}</button>
+              <button type="submit" ref={okRef} className={req.danger ? 'danger on' : 'on'} disabled={missing}>{req.ok ?? t('OK')}</button>
+              <button type="button" onClick={() => close(null)}>{req.cancel ?? t('Annulla')}</button>
             </div>
           </form>
         </div>
@@ -59,14 +60,14 @@ export function DialogProvider({ children }: { children: ReactNode }) {
 /** Dialogo comune per registrare l'accettazione di un rischio. */
 export async function askRisk(ask: Ask, what: string): Promise<Risk | null> {
   const r = await ask({
-    title: 'Accettazione del rischio',
-    message: <>Registro dei rischi accettati — <b>{what}</b>. L’accettazione va motivata e firmata da chi ne ha l’autorità.</>,
+    title: t('Accettazione del rischio'),
+    message: <>{t('Registro dei rischi accettati')} — <b>{what}</b>. {t('L’accettazione va motivata e firmata da chi ne ha l’autorità.')}</>,
     fields: [
-      { key: 'text', label: 'Motivazione', type: 'textarea', required: true },
-      { key: 'by', label: 'Chi accetta il rischio (nome e ruolo)', required: true },
-      { key: 'date', label: 'Data', value: new Date().toISOString().slice(0, 10) },
+      { key: 'text', label: t('Motivazione'), type: 'textarea', required: true },
+      { key: 'by', label: t('Chi accetta il rischio (nome e ruolo)'), required: true },
+      { key: 'date', label: t('Data'), value: new Date().toISOString().slice(0, 10) },
     ],
-    ok: 'Registra',
+    ok: t('Registra'),
   });
   return r ? { text: r.text.trim(), by: r.by.trim(), date: r.date || new Date().toISOString().slice(0, 10) } : null;
 }

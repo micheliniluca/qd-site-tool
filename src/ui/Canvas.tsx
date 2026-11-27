@@ -5,6 +5,7 @@ import { pesScheme, type PairEval, type SiteEval, type Status } from '../site/ev
 import type { Safeguard } from '../site/safeguard';
 import type { Envelope } from '../site/envelope';
 import { fmt1, fmtInt } from './format';
+import { t } from '../i18n';
 
 export type Tool =
   | { k: 'select' }
@@ -108,8 +109,8 @@ export function Canvas(props: Props) {
       setDrag({ k: 'pan', sx: e.clientX, sy: e.clientY, v0: view, moved: false }); return;
     }
     if (e.button !== 0) return;
-    const t = (e.target as Element).closest('[data-h]') as HTMLElement | SVGElement | null;
-    const h = t?.getAttribute('data-h');
+    const hit = (e.target as Element).closest('[data-h]') as HTMLElement | SVGElement | null;
+    const h = hit?.getAttribute('data-h');
     if (tool.k === 'place') { props.onPlace(tool.preset, w); return; }
     if (tool.k === 'line') { setLinePts([...linePts, w]); return; }
     if (tool.k === 'measure' || tool.k === 'calib') {
@@ -258,13 +259,13 @@ export function Canvas(props: Props) {
         {(directional || o.kind === 'building') && <line x1={fl.x} y1={fl.y} x2={fr.x} y2={fr.y} className={directional ? 'door' : 'door-thin'} />}
         {directional && <polygon className="door-arrow" points={`${fc.x + dirx * 9},${fc.y + diry * 9} ${fc.x - diry * 5},${fc.y + dirx * 5} ${fc.x + diry * 5},${fc.y - dirx * 5}`} />}
         <text x={c.x} y={c.y + (small ? -Math.max(o.w, o.d) * view.k / 2 - 6 : 0)} className="obj-lbl c">{o.name}</text>
-        {isMag && !small && (() => { const l = magazineLoad(m); const hds = [...new Set(l.totals.map((t) => t.hd))];
-          return <text x={c.x} y={c.y + 13} className="obj-sub c">{l.neqQd >= 1 || l.neq14 > 0 ? `HD ${hds.join('+')} · ${fmtInt(l.neqQd + l.neq14)} kg` : 'vuoto'}</text>; })()}
+        {isMag && !small && (() => { const l = magazineLoad(m); const hds = [...new Set(l.totals.map((x) => x.hd))];
+          return <text x={c.x} y={c.y + 13} className="obj-sub c">{l.neqQd >= 1 || l.neq14 > 0 ? `HD ${hds.join('+')} · ${fmtInt(l.neqQd + l.neq14)} kg` : t('vuoto')}</text>; })()}
         {o.kind === 'building' && !small && <text x={c.x} y={c.y + 13} className="obj-sub c">ES {o.es}</text>}
         {o.id === selectedId && (
           <>
             <line x1={fc.x} y1={fc.y} x2={rot.x} y2={rot.y} className="rot-stem" />
-            <circle cx={rot.x} cy={rot.y} r={6} className="handle rot" data-h={'rot:' + o.id}><title>Ruota (Maiusc = passi di 15°)</title></circle>
+            <circle cx={rot.x} cy={rot.y} r={6} className="handle rot" data-h={'rot:' + o.id}><title>{t('Ruota (Maiusc = passi di 15°)')}</title></circle>
           </>
         )}
       </g>
@@ -284,7 +285,7 @@ export function Canvas(props: Props) {
     }
     const cx = ms.reduce((s, m) => s + m.cx, 0) / ms.length, cy = Math.max(...ms.map((m) => m.cy + Math.max(m.w, m.d) / 2));
     const C = S({ x: cx, y: cy });
-    groupEls.push(<text key={`gt${g.id}`} x={C.x} y={C.y - 16} className="group-lbl c">{`Sito unico · ${fmtInt(g.load.neqQd)} kg`}</text>);
+    groupEls.push(<text key={`gt${g.id}`} x={C.x} y={C.y - 16} className="group-lbl c">{t('Sito unico · {neq} kg', { neq: fmtInt(g.load.neqQd) })}</text>);
   }
 
   /* ---- linee di salvaguardia ---- */
@@ -294,11 +295,11 @@ export function Canvas(props: Props) {
     const m = objById(id) as Magazine | undefined;
     if (!m || !sg.pts.length) return;
     // etichette distribuite a direzioni diverse (i contorni sono raggi equispaziati da nord) per non sovrapporsi
-    const t = S(id === selectedId ? sg.pts[0] : sg.pts[Math.round(((sgi++ * 29) % 360) / 360 * sg.pts.length) % sg.pts.length]);
+    const lp = S(id === selectedId ? sg.pts[0] : sg.pts[Math.round(((sgi++ * 29) % 360) / 360 * sg.pts.length) % sg.pts.length]);
     sgs.push(
       <g key={'sg' + id} className={`safeguard ${id === selectedId ? 'sel' : ''}`}>
         <polygon points={pts(sg.pts)} />
-        <text x={t.x} y={t.y - 5} className="sg-lbl c">{`${sg.esRow === '24' ? 'IBD' : 'ES ' + sg.esRow} ${m.name}: ${sg.label}${sg.unknown ? ' (parz.)' : ''}`}</text>
+        <text x={lp.x} y={lp.y - 5} className="sg-lbl c">{`${sg.esRow === '24' ? 'IBD' : 'ES ' + sg.esRow} ${m.name}: ${sg.label}${sg.unknown ? t(' (parz.)') : ''}`}</text>
       </g>,
     );
   });
@@ -306,11 +307,11 @@ export function Canvas(props: Props) {
   if (props.envelope && props.envelope.rings.length) {
     const d = props.envelope.rings.map((r) => 'M' + r.map((q) => { const s = S(q); return `${s.x.toFixed(1)},${s.y.toFixed(1)}`; }).join('L') + 'Z').join(' ');
     const top = props.envelope.rings.flat().reduce((a, q) => (q.y > a.y ? q : a));
-    const t = S(top);
+    const tp = S(top);
     sgs.push(
       <g key="envelope" className="envelope">
         <path d={d} />
-        <text x={t.x} y={t.y - 6} className="env-lbl c">{`Inviluppo ${props.envLabel}`}</text>
+        <text x={tp.x} y={tp.y - 6} className="env-lbl c">{t('Inviluppo {label}', { label: props.envLabel })}</text>
       </g>,
     );
   }
@@ -326,7 +327,7 @@ export function Canvas(props: Props) {
         <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} />
         <circle cx={a.x} cy={a.y} r={3} /><circle cx={b.x} cy={b.y} r={3} />
         <text x={(a.x + b.x) / 2 + 6} y={(a.y + b.y) / 2 - 6} className="pair-lbl">
-          {`${fmt1(d)} m${g?.req != null ? ` / richiesti ${fmtInt(g.req)} m` : ''}`}
+          {`${fmt1(d)} m${g?.req != null ? t(' / richiesti {req} m', { req: fmtInt(g.req) }) : ''}`}
         </text>
       </g>
     );
@@ -355,7 +356,7 @@ export function Canvas(props: Props) {
   let hoverInfo = '';
   if (hover) {
     hoverInfo = `x ${fmt1(hover.x)}  y ${fmt1(hover.y)} m`;
-    if (sel && isRect(sel)) { const l = toLocal(sel, hover); hoverInfo += `   ·  locale ${sel.name}: ${fmt1(l.x)}, ${fmt1(l.y)}`; }
+    if (sel && isRect(sel)) { const l = toLocal(sel, hover); hoverInfo += t('   ·  locale {name}: {x}, {y}', { name: sel.name, x: fmt1(l.x), y: fmt1(l.y) }); }
   }
 
   return (
@@ -383,12 +384,12 @@ export function Canvas(props: Props) {
       </svg>
       <div className="canvas-status">
         <span>{hoverInfo}</span>
-        <span>{tool.k === 'line' ? 'Clic per aggiungere vertici · doppio clic o Invio per finire · Esc annulla'
-          : tool.k === 'place' ? 'Clic sulla planimetria per posizionare · Esc annulla'
-          : tool.k === 'measure' ? 'Misura: clic su due punti'
-          : tool.k === 'calib' ? 'Calibrazione: clic su due punti di distanza nota del disegno'
-          : tool.k === 'movebg' ? 'Trascina lo sfondo'
-          : 'Trascina per spostare · rotella per zoom · trascina il vuoto per muovere la vista'}</span>
+        <span>{tool.k === 'line' ? t('Clic per aggiungere vertici · doppio clic o Invio per finire · Esc annulla')
+          : tool.k === 'place' ? t('Clic sulla planimetria per posizionare · Esc annulla')
+          : tool.k === 'measure' ? t('Misura: clic su due punti')
+          : tool.k === 'calib' ? t('Calibrazione: clic su due punti di distanza nota del disegno')
+          : tool.k === 'movebg' ? t('Trascina lo sfondo')
+          : t('Trascina per spostare · rotella per zoom · trascina il vuoto per muovere la vista')}</span>
       </div>
     </div>
   );

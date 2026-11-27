@@ -1,15 +1,16 @@
 /* Confronto delle formule con le tabelle di consultazione Annex I-A Tables 10–12 (data/lookup.json).
    Equivalente a legacy/tests/test.js, con la classificazione delle differenze di qd_app.js validate(). */
 import * as QDF from './formulas';
+import { N_ } from '../i18n';
 
 export type Lookup = Record<string, Record<string, string>>;
 
 export type DiffReason = 'refuso4000' | 'dfd8' | 'raccordo' | 'non-spiegata';
 export const DIFF_TEXT: Record<DiffReason, string> = {
-  refuso4000: 'Refuso di Table 10: la riga 4 000 kg contiene i valori di 4 500 kg',
-  dfd8: 'DFD8: coefficiente stampato 0.141 (+1 m rispetto a Table 11, cautelativo)',
-  raccordo: 'Raccordo tra tratti: la tabella usa il tratto inferiore, il motore la distanza maggiore',
-  'non-spiegata': 'Da verificare',
+  refuso4000: N_('Refuso di Table 10: la riga 4 000 kg contiene i valori di 4 500 kg'),
+  dfd8: N_('DFD8: coefficiente stampato 0.141 (+1 m rispetto a Table 11, cautelativo)'),
+  raccordo: N_('Raccordo tra tratti: la tabella usa il tratto inferiore, il motore la distanza maggiore'),
+  'non-spiegata': N_('Da verificare'),
 };
 
 export interface Diff { ref: string; q: number; table: number; engine: number | null; exact: number | null; reason: DiffReason }

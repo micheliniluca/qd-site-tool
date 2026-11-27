@@ -2,6 +2,7 @@
 import * as pdfjs from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { Background } from '../site/model';
+import { t } from '../i18n';
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -19,7 +20,7 @@ function imageSize(url: string): Promise<{ w: number; h: number }> {
   return new Promise((res, rej) => {
     const i = new Image();
     i.onload = () => res({ w: i.naturalWidth, h: i.naturalHeight });
-    i.onerror = () => rej(new Error('Immagine non leggibile'));
+    i.onerror = () => rej(new Error(t('Immagine non leggibile')));
     i.src = url;
   });
 }
@@ -58,7 +59,7 @@ export async function loadBackground(f: File, center: { x: number; y: number }, 
   else { url = await readAsDataUrl(f); ({ w, h } = await imageSize(url)); }
   const mPerPx = widthM / w;
   return {
-    dataUrl: url, name: f.name + (pdfPage > 1 ? ` (pag. ${pdfPage})` : ''), pxW: w, pxH: h,
+    dataUrl: url, name: f.name + (pdfPage > 1 ? t(' (pag. {n})', { n: pdfPage }) : ''), pxW: w, pxH: h,
     x: center.x - (w * mPerPx) / 2, y: center.y + (h * mPerPx) / 2, mPerPx, opacity: 0.6, locked: true,
   };
 }

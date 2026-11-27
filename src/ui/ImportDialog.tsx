@@ -3,6 +3,7 @@ import type { ParseResult } from '../site/inventoryImport';
 import { norm } from '../site/inventoryImport';
 import type { Item, Magazine, Project } from '../site/model';
 import { fmtInt } from './format';
+import { t } from '../i18n';
 
 export interface ImportPreview extends ParseResult { file: string; sheet: string }
 
@@ -30,25 +31,25 @@ export function ImportDialog({ project, preview, onApply, onClose }: {
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3>Import inventario — {preview.file} (foglio “{preview.sheet}”)</h3>
-        <p className="hint">{preview.rows.length} righe lette. Il contenuto dei magazzini trovati sarà <b>sostituito</b> dall’inventario importato.</p>
+        <h3>{t('Import inventario — {file} (foglio “{sheet}”)', { file: preview.file, sheet: preview.sheet })}</h3>
+        <p className="hint">{t('{n} righe lette. Il contenuto dei magazzini trovati sarà', { n: preview.rows.length })} <b>{t('sostituito')}</b> {t('dall’inventario importato.')}</p>
         <table className="tbl compact">
-          <thead><tr><th>Magazzino</th><th className="r">Righe</th><th className="r">NEQ (kg)</th><th>HD</th></tr></thead>
+          <thead><tr><th>{t('Magazzino')}</th><th className="r">{t('Righe')}</th><th className="r">NEQ (kg)</th><th>HD</th></tr></thead>
           <tbody>
             {[...matched.values()].map(({ mag, items }) => (
               <tr key={mag.id}><td>{mag.name}</td><td className="r">{items.length}</td>
                 <td className="r">{fmtInt(items.reduce((s, i) => s + i.qty * i.neqUnit, 0))}</td>
                 <td>{[...new Set(items.map((i) => `${i.hd}${i.cg}`))].join(', ')}</td></tr>
             ))}
-            {!matched.size && <tr><td colSpan={4} className="empty">Nessun magazzino del progetto corrisponde ai nomi nel file.</td></tr>}
+            {!matched.size && <tr><td colSpan={4} className="empty">{t('Nessun magazzino del progetto corrisponde ai nomi nel file.')}</td></tr>}
           </tbody>
         </table>
-        {unmatched.size > 0 && <p className="warn">Magazzini non presenti nel progetto (righe ignorate): {[...unmatched.entries()].map(([n, c]) => `${n} (${c})`).join(', ')}.</p>}
-        {preview.errors.length > 0 && <div className="warn bad"><b>Righe scartate</b><ul className="mini">{preview.errors.slice(0, 30).map((e, i) => <li key={i}>{e}</li>)}</ul>{preview.errors.length > 30 && `… e altre ${preview.errors.length - 30}`}</div>}
-        {warnings.length > 0 && <div className="warn"><b>Assunzioni da verificare</b><ul className="mini">{warnings.slice(0, 30).map((e, i) => <li key={i}>{e}</li>)}</ul>{warnings.length > 30 && `… e altre ${warnings.length - 30}`}</div>}
+        {unmatched.size > 0 && <p className="warn">{t('Magazzini non presenti nel progetto (righe ignorate): {list}.', { list: [...unmatched.entries()].map(([n, c]) => `${n} (${c})`).join(', ') })}</p>}
+        {preview.errors.length > 0 && <div className="warn bad"><b>{t('Righe scartate')}</b><ul className="mini">{preview.errors.slice(0, 30).map((e, i) => <li key={i}>{e}</li>)}</ul>{preview.errors.length > 30 && t('… e altre {n}', { n: preview.errors.length - 30 })}</div>}
+        {warnings.length > 0 && <div className="warn"><b>{t('Assunzioni da verificare')}</b><ul className="mini">{warnings.slice(0, 30).map((e, i) => <li key={i}>{e}</li>)}</ul>{warnings.length > 30 && t('… e altre {n}', { n: warnings.length - 30 })}</div>}
         <div className="row-btns">
-          <button className="on" disabled={!matched.size} onClick={() => onApply(new Map([...matched.entries()].map(([id, v]) => [id, v.items])))}>Applica a {matched.size} magazzini</button>
-          <button onClick={onClose}>Annulla</button>
+          <button className="on" disabled={!matched.size} onClick={() => onApply(new Map([...matched.entries()].map(([id, v]) => [id, v.items])))}>{t('Applica a {n} magazzini', { n: matched.size })}</button>
+          <button onClick={onClose}>{t('Annulla')}</button>
         </div>
       </div>
     </div>

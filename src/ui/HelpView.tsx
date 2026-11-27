@@ -1,42 +1,45 @@
 /* Scheda "Help": teoria completa della valutazione QD secondo AASTP-1 Ed. D V1, come è applicata dallo strumento.
    Le tabelle (effetti, formule, matrici, Table 4/5) sono generate dai dati del motore, quindi coincidono col calcolo. */
 import { useMemo, useState, type ReactNode } from 'react';
+import { N_, t, useLang } from '../i18n';
 import { QDF } from '../engine';
 import { COLCODE, EFFMAP, EFFNAME, ES_ROWS, HDS, MATRIX, type TableId } from '../engine/matrix';
 import { CGS, HD_FULL, TABLE4, TABLE5, table4Cell, table5Cell } from '../engine/mixing';
-import { formulaTable } from '../engine/formulas';
+import { txText, formulaTable } from '../engine/formulas';
 import { fmtInt } from './format';
+import { HelpEn } from './HelpView.en';
 
 const SECTIONS: [string, string][] = [
-  ['scopo', '1. Scopo, norma e limiti'],
-  ['concetti', '2. Concetti di base'],
-  ['effetti', '3. Effetti esplosivi e quantità di riferimento'],
-  ['distanze', '4. Tipi di distanza e livelli di protezione'],
-  ['scala', '5. Legge di scala e formule'],
-  ['matrici', '6. Le matrici PES/ES di Annex I-A'],
-  ['settori', '7. Orientamento: fronte, lato, retro'],
-  ['misura', '8. Misura della distanza'],
-  ['arrotondamenti', '9. Arrotondamenti, raccordi, calcolo inverso'],
-  ['misto', '10. Contenuto misto: Table 4 e Table 5'],
-  ['sitiunici', '11. Siti unici e aggregazione'],
-  ['speciali', '12. ECM: IBD ridotte e terrapieno condiviso'],
-  ['barricate', '13. Barricate'],
-  ['danni', '14. Danni attesi (Part I §1.3.7)'],
-  ['gestione', '15. Riempimento, consegne, rischi, revisioni'],
-  ['validazione', '16. Validazione del motore'],
-  ['flusso', '17. Flusso di lavoro consigliato'],
-  ['riferimenti', '18. Riferimenti nel PDF'],
-  ['glossario', '19. Glossario'],
+  ['scopo', N_('1. Scopo, norma e limiti')],
+  ['concetti', N_('2. Concetti di base')],
+  ['effetti', N_('3. Effetti esplosivi e quantità di riferimento')],
+  ['distanze', N_('4. Tipi di distanza e livelli di protezione')],
+  ['scala', N_('5. Legge di scala e formule')],
+  ['matrici', N_('6. Le matrici PES/ES di Annex I-A')],
+  ['settori', N_('7. Orientamento: fronte, lato, retro')],
+  ['misura', N_('8. Misura della distanza')],
+  ['arrotondamenti', N_('9. Arrotondamenti, raccordi, calcolo inverso')],
+  ['misto', N_('10. Contenuto misto: Table 4 e Table 5')],
+  ['sitiunici', N_('11. Siti unici e aggregazione')],
+  ['speciali', N_('12. ECM: IBD ridotte e terrapieno condiviso')],
+  ['barricate', N_('13. Barricate')],
+  ['danni', N_('14. Danni attesi (Part I §1.3.7)')],
+  ['gestione', N_('15. Riempimento, consegne, rischi, revisioni')],
+  ['validazione', N_('16. Validazione del motore')],
+  ['flusso', N_('17. Flusso di lavoro consigliato')],
+  ['riferimenti', N_('18. Riferimenti nel PDF')],
+  ['glossario', N_('19. Glossario')],
 ];
 
-function Sec({ id, children }: { id: string; children: ReactNode }) {
-  const t = SECTIONS.find((s) => s[0] === id)![1];
-  return <section id={`h-${id}`} className="help-sec"><h2>{t}</h2>{children}</section>;
+/** Sezione della guida: il titolo viene da SECTIONS, tradotto. Usata anche da HelpView.en.tsx. */
+export function Sec({ id, children }: { id: string; children: ReactNode }) {
+  const title = SECTIONS.find((s) => s[0] === id)![1];
+  return <section id={`h-${id}`} className="help-sec"><h2>{t(title)}</h2>{children}</section>;
 }
-const Ref = ({ children }: { children: ReactNode }) => <span className="ref">{children}</span>;
+export const Ref = ({ children }: { children: ReactNode }) => <span className="ref">{children}</span>;
 
 /** Figura dei settori: rettangolo con la facciata frontale in alto e rette dagli spigoli. */
-function SectorFigure({ front, rear, title }: { front: number; rear: number; title: string }) {
+export function SectorFigure({ front, rear, title }: { front: number; rear: number; title: string }) {
   const W = 320, H = 300, cx = 160, cy = 150, w = 50, d = 90;
   const of = ((front - 90) * Math.PI) / 180, orr = ((rear - 90) * Math.PI) / 180, L = 200;
   const FL = [cx - w / 2, cy - d / 2], FR = [cx + w / 2, cy - d / 2], RL = [cx - w / 2, cy + d / 2], RR = [cx + w / 2, cy + d / 2];
@@ -50,10 +53,10 @@ function SectorFigure({ front, rear, title }: { front: number; rear: number; tit
         <rect x={cx - w / 2} y={cy - d / 2} width={w} height={d} className="hf-mag" />
         <line x1={FL[0]} y1={FL[1]} x2={FR[0]} y2={FR[1]} className="hf-door" />
         {[[FL, fl], [FR, fr], [RL, rl], [RR, rr]].map(([a, b], i) => <line key={i} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} className="hf-ray" />)}
-        <text x={cx} y={28} className="hf-t">FRONTE → colonna (c)</text>
-        <text x={cx} y={H - 12} className="hf-t">RETRO → colonna (a)</text>
-        <text x={34} y={cy + 4} className="hf-t">LATO (b)</text>
-        <text x={W - 34} y={cy + 4} className="hf-t">LATO (b)</text>
+        <text x={cx} y={28} className="hf-t">{t('FRONTE → colonna (c)')}</text>
+        <text x={cx} y={H - 12} className="hf-t">{t('RETRO → colonna (a)')}</text>
+        <text x={34} y={cy + 4} className="hf-t">{t('LATO (b)')}</text>
+        <text x={W - 34} y={cy + 4} className="hf-t">{t('LATO (b)')}</text>
         <text x={FR[0] + 6} y={FR[1] + 14} className="hf-s">{front}°</text>
         <text x={RR[0] + 6} y={RR[1] - 6} className="hf-s">{rear}°</text>
       </svg>
@@ -63,7 +66,7 @@ function SectorFigure({ front, rear, title }: { front: number; rear: number; tit
 }
 
 /** Calcolatrice: distanza da quantità e quantità da distanza per una formula. */
-function Calculator() {
+export function Calculator() {
   const [ref, setRef] = useState('BD31');
   const [q, setQ] = useState(10000);
   const [dist, setDist] = useState(400);
@@ -73,30 +76,49 @@ function Calculator() {
   return (
     <div className="calc">
       <div className="row-btns">
-        <label className="fld"><span>Formula</span><select value={ref} onChange={(e) => setRef(e.target.value)}>{QDF.refs.map((r) => <option key={r}>{r}</option>)}</select></label>
+        <label className="fld"><span>{t('Formula')}</span><select value={ref} onChange={(e) => setRef(e.target.value)}>{QDF.refs.map((r) => <option key={r}>{r}</option>)}</select></label>
         <label className="fld"><span>Q (kg)</span><input type="number" value={q} onChange={(e) => setQ(parseFloat(e.target.value) || 0)} /></label>
         <label className="fld"><span>D (m)</span><input type="number" value={dist} onChange={(e) => setDist(parseFloat(e.target.value) || 0)} /></label>
       </div>
-      <p>{formulaTable(ref)} · campo di validità {fmtInt(lo)}–{fmtInt(hi)} kg</p>
-      <p>Distanza: {d == null ? <b>fuori campo — la norma non dà la distanza</b> : <><code>{seg}</code> → {de!.toFixed(2)} m → <b>{d} m</b></>}</p>
-      <p>Quantità massima a {dist} m: <b>{inv.below ? 'nessuna (anche la quantità minima richiede di più)' : `${inv.capped ? '≥ ' : ''}${fmtInt(inv.q)} kg`}</b>{inv.capped ? ' (limite superiore di validità)' : ''}</p>
+      <p>{formulaTable(ref)} · {t('campo di validità {lo}–{hi} kg', { lo: fmtInt(lo), hi: fmtInt(hi) })}</p>
+      <p>{t('Distanza:')} {d == null ? <b>{t('fuori campo — la norma non dà la distanza')}</b> : <><code>{seg}</code> → {de!.toFixed(2)} m → <b>{d} m</b></>}</p>
+      <p>{t('Quantità massima a {d} m:', { d: dist })} <b>{inv.below ? t('nessuna (anche la quantità minima richiede di più)') : `${inv.capped ? '≥ ' : ''}${fmtInt(inv.q)} kg`}</b>{inv.capped ? t(' (limite superiore di validità)') : ''}</p>
     </div>
   );
 }
 
+/** Stato condiviso tra le due versioni della guida (italiana qui sotto, inglese in HelpView.en.tsx). */
+export interface HelpBodyProps {
+  open: Record<string, boolean>;
+  toggle: (k: string) => void;
+  formulas: { r: string; segs: (typeof QDF.F)[string] }[];
+}
+
 export function HelpView() {
+  const lang = useLang();
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const toggle = (k: string) => setOpen((o) => ({ ...o, [k]: !o[k] }));
   const go = (id: string) => document.getElementById(`h-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const formulas = useMemo(() => QDF.refs.map((r) => ({ r, segs: QDF.F[r] })), []);
+  const body: HelpBodyProps = { open, toggle, formulas };
 
   return (
     <div className="view help">
       <aside className="view-side help-toc">
-        <h3>Teoria QD</h3>
-        {SECTIONS.map(([id, t]) => <a key={id} onClick={() => go(id)}>{t}</a>)}
+        <h3>{t('Teoria QD')}</h3>
+        {SECTIONS.map(([id, title]) => <a key={id} onClick={() => go(id)}>{t(title)}</a>)}
       </aside>
       <div className="view-main help-body">
+        {lang === 'en' ? <HelpEn {...body} /> : <HelpIt {...body} />}
+      </div>
+    </div>
+  );
+}
+
+/** Guida in italiano (testo originale). */
+function HelpIt({ open, toggle, formulas }: HelpBodyProps) {
+  return (
+    <>
         <p className="draft-note">Questa guida spiega il metodo con cui lo strumento applica AASTP-1 Edition D Version 1 (nov. 2025). Non sostituisce la norma:
           i riferimenti tra parentesi rimandano a paragrafi e pagine del PDF, da consultare per ogni decisione. Ogni risultato è una BOZZA da verificare e firmare a cura di personale qualificato.</p>
 
@@ -134,7 +156,7 @@ export function HelpView() {
             <li><b>Termico</b> — TD per 1.3.1, 1.3.2, e il termico di 1.2.3 e 1.6.</li>
           </ul>
           <p>La tabella seguente (Part I Ch.3 Table 1) dice quali effetti valgono per ciascuna HD e se la quantità è il NEQ totale o l'MCE:</p>
-          <table className="tbl compact"><thead><tr><th>HD / SsD</th>{(['blast', 'debris', 'p121', 'p122', 't131', 't132'] as const).map((e) => <th key={e}>{EFFNAME[e]}</th>)}</tr></thead>
+          <table className="tbl compact"><thead><tr><th>HD / SsD</th>{(['blast', 'debris', 'p121', 'p122', 't131', 't132'] as const).map((e) => <th key={e}>{t(EFFNAME[e])}</th>)}</tr></thead>
             <tbody>{HDS.map((h) => <tr key={h}><td><b>{h}</b></td>{(['blast', 'debris', 'p121', 'p122', 't131', 't132'] as const).map((e) => <td key={e}>{EFFMAP[h].find((x) => x[0] === e)?.[1] ?? ''}</td>)}</tr>)}</tbody></table>
           <p className="hint">Nota: nelle matrici il termico di 1.2.3 e 1.6 si legge nella riga “Thermal 1.3.2”, come fa la scheda originale.</p>
         </Sec>
@@ -170,7 +192,7 @@ export function HelpView() {
           <h4>Tutte le formule (Annex I-A Tables 5–9)</h4>
           <button onClick={() => toggle('formule')}>{open.formule ? 'Nascondi' : 'Mostra'} le {formulas.length} formule</button>
           {open.formule && <table className="tbl compact"><thead><tr><th>Formula</th><th>Tabella</th><th>Tratti (Q in kg → D in m)</th></tr></thead><tbody>
-            {formulas.map(({ r, segs }) => <tr key={r}><td><b>{r}</b></td><td>{formulaTable(r)}</td><td>{segs.map((g, i) => <div key={i}><code>{fmtInt(g[0])}{g[1] ? ' ≤ ' : ' < '}Q{g[3] ? ' ≤ ' : ' < '}{fmtInt(g[2])}: {g[4].tx}</code></div>)}</td></tr>)}
+            {formulas.map(({ r, segs }) => <tr key={r}><td><b>{r}</b></td><td>{formulaTable(r)}</td><td>{segs.map((g, i) => <div key={i}><code>{fmtInt(g[0])}{g[1] ? ' ≤ ' : ' < '}Q{g[3] ? ' ≤ ' : ' < '}{fmtInt(g[2])}: {txText(g[4].tx)}</code></div>)}</td></tr>)}
           </tbody></table>}
           <p className="hint">Scostamenti dallo stampato, tutti cautelativi o coerenti con le formule inverse e le tabelle di consultazione: P1D3 e P2D3 con 0,67; DFD20 nei tratti 400–3 375 e 5 000–7 020 kg dalle formule inverse; DFD8 con il coefficiente stampato 0,141 (+1 m rispetto a Table 11).</p>
         </Sec>
@@ -178,7 +200,7 @@ export function HelpView() {
         <Sec id="matrici">
           <p>Le matrici di Annex I-A (PDF pag. 100–231) incrociano il <b>tipo di PES</b> (colonne a–j) con il <b>tipo di ES</b> (righe 1–28c). Ogni cella contiene, per ciascun effetto, la formula da usare, una distanza fissa, “No QD” o “Not applicable”, il livello di protezione e note.</p>
           <button onClick={() => toggle('pes')}>{open.pes ? 'Nascondi' : 'Mostra'} le colonne PES</button>
-          {open.pes && <table className="tbl compact"><tbody>{(['1', '2', '3', '4'] as TableId[]).flatMap((t) => MATRIX.tables[t].cols.map((c, i) => <tr key={t + i}><td><b>({COLCODE[t][i]})</b></td><td>Table {t} — {MATRIX.tables[t].title}</td><td>{c}</td></tr>))}</tbody></table>}
+          {open.pes && <table className="tbl compact"><tbody>{(['1', '2', '3', '4'] as TableId[]).flatMap((tid) => MATRIX.tables[tid].cols.map((c, i) => <tr key={tid + i}><td><b>({COLCODE[tid][i]})</b></td><td>Table {tid} — {MATRIX.tables[tid].title}</td><td>{c}</td></tr>))}</tbody></table>}
           {' '}<button onClick={() => toggle('es')}>{open.es ? 'Nascondi' : 'Mostra'} le righe ES</button>
           {open.es && <table className="tbl compact"><tbody>{ES_ROWS.map((r) => <tr key={r}><td><b>ES {r}</b></td><td>{MATRIX.es[r]}</td></tr>)}</tbody></table>}
           <h4>Come si legge una cella</h4>
@@ -237,8 +259,8 @@ export function HelpView() {
             <tbody>{CGS.map((a) => <tr key={a}><th>{a}</th>{CGS.map((b) => <td key={b}>{table5Cell(a, b)}</td>)}</tr>)}</tbody></table>
           <button onClick={() => toggle('notes45')}>{open.notes45 ? 'Nascondi' : 'Mostra'} il testo delle note</button>
           {open.notes45 && <div className="norm-block">
-            {Object.entries(TABLE4.notes).map(([k, t]) => <p key={'4' + k}><b>Table 4 nota {k}</b>: {t}</p>)}
-            {Object.entries(TABLE5.notes).map(([k, t]) => <p key={'5' + k}><b>Table 5 nota {k}</b>: {t}</p>)}
+            {Object.entries(TABLE4.notes).map(([k, txt]) => <p key={'4' + k}><b>Table 4 nota {k}</b>: {txt}</p>)}
+            {Object.entries(TABLE5.notes).map(([k, txt]) => <p key={'5' + k}><b>Table 5 nota {k}</b>: {txt}</p>)}
           </div>}
         </Sec>
 
@@ -329,7 +351,6 @@ export function HelpView() {
               ['Rischio accettato', 'non conformità accettata formalmente da chi ne ha l’autorità']].map(([a, b]) => <div key={a}><dt>{a}</dt><dd>{b}</dd></div>)}
           </dl>
         </Sec>
-      </div>
-    </div>
+    </>
   );
 }

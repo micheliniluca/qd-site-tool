@@ -5,11 +5,13 @@ import type { Project } from '../site/model';
 import { buildPrintSvg, fitScale, PAPERS, SCALES } from '../site/printSheet';
 import type { Safeguard } from '../site/safeguard';
 import type { Envelope } from '../site/envelope';
+import { t, useLang } from '../i18n';
 import { downloadBlob, safeName } from './download';
 
 interface Props { project: Project; site: SiteEval; safeguards: Map<string, Safeguard>; envelope: Envelope | null; sgLabel: string }
 
 export function PrintView({ project, site, safeguards, envelope, sgLabel }: Props) {
+  useLang();
   const [paper, setPaper] = useState('A3');
   const [landscape, setLandscape] = useState(true);
   const auto = useMemo(() => fitScale(project, { paper, landscape }, safeguards, envelope), [project, paper, landscape, safeguards, envelope]);
@@ -30,21 +32,21 @@ export function PrintView({ project, site, safeguards, envelope, sgLabel }: Prop
   return (
     <div className="view stampa">
       <aside className="view-side">
-        <h3>Tavola in scala</h3>
-        <label className="fld"><span>Formato</span><select value={paper} onChange={(e) => { setPaper(e.target.value); setScale(null); }}>{Object.keys(PAPERS).map((p) => <option key={p}>{p}</option>)}</select></label>
-        <label className="chk"><input type="checkbox" checked={landscape} onChange={(e) => { setLandscape(e.target.checked); setScale(null); }} /> Orizzontale</label>
-        <label className="fld"><span>Scala</span>
+        <h3>{t('Tavola in scala')}</h3>
+        <label className="fld"><span>{t('Formato')}</span><select value={paper} onChange={(e) => { setPaper(e.target.value); setScale(null); }}>{Object.keys(PAPERS).map((p) => <option key={p}>{p}</option>)}</select></label>
+        <label className="chk"><input type="checkbox" checked={landscape} onChange={(e) => { setLandscape(e.target.checked); setScale(null); }} /> {t('Orizzontale')}</label>
+        <label className="fld"><span>{t('Scala')}</span>
           <select value={sc} onChange={(e) => setScale(+e.target.value)}>
-            {[...new Set([...SCALES, auto.scale])].sort((a, b) => a - b).map((s) => <option key={s} value={s}>1:{s}{s === auto.scale ? ' (adatta)' : ''}</option>)}
+            {[...new Set([...SCALES, auto.scale])].sort((a, b) => a - b).map((s) => <option key={s} value={s}>1:{s}{s === auto.scale ? t(' (adatta)') : ''}</option>)}
           </select>
         </label>
-        <label className="fld"><span>Redatto da</span><input value={author} onChange={(e) => setAuthor(e.target.value)} /></label>
-        <p className="hint">Linee tracciate: {sgLabel} (si cambiano dalla barra della planimetria). Centro: baricentro del sito.</p>
+        <label className="fld"><span>{t('Redatto da')}</span><input value={author} onChange={(e) => setAuthor(e.target.value)} /></label>
+        <p className="hint">{t('Linee tracciate: {lines} (si cambiano dalla barra della planimetria). Centro: baricentro del sito.', { lines: sgLabel })}</p>
         <div className="row-btns">
-          <button className="on" onClick={print}>Stampa…</button>
-          <button onClick={() => downloadBlob(`${safeName(project.name)}_tavola_1-${sc}_${paper}.svg`, svg, 'image/svg+xml')}>Scarica SVG</button>
+          <button className="on" onClick={print}>{t('Stampa…')}</button>
+          <button onClick={() => downloadBlob(`${safeName(project.name)}_tavola_1-${sc}_${paper}.svg`, svg, 'image/svg+xml')}>{t('Scarica SVG')}</button>
         </div>
-        <p className="hint">Stampare al 100% (senza “adatta alla pagina”). L'SVG ha le dimensioni reali del foglio in millimetri: 1 m = {(1000 / sc).toFixed(2)} mm.</p>
+        <p className="hint">{t('Stampare al 100% (senza “adatta alla pagina”). L\'SVG ha le dimensioni reali del foglio in millimetri: 1 m = {mm} mm.', { mm: (1000 / sc).toFixed(2) })}</p>
       </aside>
       <div className="view-main print-preview">
         <div className="print-sheet" dangerouslySetInnerHTML={{ __html: svg }} />

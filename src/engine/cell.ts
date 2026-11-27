@@ -1,5 +1,6 @@
 /* Selezione della cella e valutazione di una coppia PES→ES (porting di legacy/engine/qd_app.js, logica pura). */
 import * as QDF from './formulas';
+import { t } from '../i18n';
 import { EFFMAP, MATRIX, type Cond, type Effect, type Hd, type Opt, type QType, type TableId } from './matrix';
 
 export interface PairInput {
@@ -61,15 +62,15 @@ export function condOk(c: Cond | null | undefined, inp: { mce: number; vol: 'gt'
 
 export function optLabel(o: Opt): string {
   if (o.t === 'f') return o.ref + (o.cap != null ? ` (≤ ${o.cap} m)` : '');
-  if (o.t === 'fixed') return `${o.d} m (fisso)`;
-  if (o.t === 'noqd') return 'Nessuna QD';
-  return 'Non applicabile';
+  if (o.t === 'fixed') return t('{d} m (fisso)', { d: o.d });
+  if (o.t === 'noqd') return t('Nessuna QD');
+  return t('Non applicabile');
 }
 
 export function evalOpt(o: Opt, Q: number): OptEval {
-  if (o.t === 'na') return { d: 0, dr: 0, none: true, label: 'Non applicabile' };
-  if (o.t === 'noqd') return { d: 0, dr: 0, none: true, label: 'Nessuna QD' };
-  if (o.t === 'fixed') return { d: o.d!, dr: o.d!, label: `${o.d} m (fisso)` };
+  if (o.t === 'na') return { d: 0, dr: 0, none: true, label: t('Non applicabile') };
+  if (o.t === 'noqd') return { d: 0, dr: 0, none: true, label: t('Nessuna QD') };
+  if (o.t === 'fixed') return { d: o.d!, dr: o.d!, label: t('{d} m (fisso)', { d: o.d }) };
   const ref = o.ref!;
   const rg = QDF.range(ref);
   if (Q < rg[0] || Q > rg[1]) return { d: null, dr: null, oor: true, label: ref, rg };
@@ -94,7 +95,7 @@ export const cellKey = (table: TableId, col: number, es: string, eff: Effect | '
 /** Valuta un singolo effetto: selezione della cella, filtro delle condizioni, scelta dell'alternativa. */
 export function evaluateEffect(inp: PairInput, eff: Effect, qtype: QType): EffectResult {
   const row = MATRIX.tables[inp.table].rows[inp.es];
-  if (!row) throw new Error(`ES ${inp.es} non presente in Table ${inp.table}`);
+  if (!row) throw new Error(t('ES {es} non presente in Table {table}', { es: inp.es, table: inp.table }));
   const Q = qtype === 'NEQ' ? inp.neq : inp.mce;
   let cell = row.cells[eff][inp.col];
   let merged = false;

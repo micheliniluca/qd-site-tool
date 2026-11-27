@@ -9,6 +9,8 @@
    - P1D3/P2D3 con 0.67, DFD20 tratti 400–3375 e 5000–7020 kg dalle formule inverse (coerenti con Tables 11/12);
    - DFD8 con il coefficiente stampato 0.141 (+1 m rispetto a Table 11, cautelativo). */
 
+import { numLocale, t } from '../i18n';
+
 export type SegFn = ((q: number) => number) & { tx?: string };
 /** [qlo, loInclusive, qhi, hiInclusive, f(Q)] */
 export type Segment = [number, boolean, number, boolean, SegFn];
@@ -190,6 +192,11 @@ export function segText(ref: string, Q: number): string | null {
   const i = segOf(ref, Q);
   if (i < 0) return null;
   const g = F[ref][i];
-  return g[0].toLocaleString('it-IT') + (g[1] ? ' ≤ ' : ' < ') + 'Q' + (g[3] ? ' ≤ ' : ' < ') +
-    g[2].toLocaleString('it-IT') + ' kg:  D = ' + (g[4].tx || '?');
+  return g[0].toLocaleString(numLocale()) + (g[1] ? ' ≤ ' : ' < ') + 'Q' + (g[3] ? ' ≤ ' : ' < ') +
+    g[2].toLocaleString(numLocale()) + ' kg:  D = ' + (txText(g[4].tx) || '?');
+}
+
+/** Testo della formula di un tratto (SegFn.tx) nella lingua corrente: traduce "(fisso)" e la nota sulle formule inverse. */
+export function txText(tx: string | undefined): string {
+  return (tx ?? '').replace('(fisso)', t('(fisso)')).replace('[da formula inversa / Table 11]', t('[da formula inversa / Table 11]'));
 }

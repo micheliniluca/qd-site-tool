@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 export function downloadBlob(name: string, data: BlobPart, type: string) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([data], { type }));
@@ -7,4 +9,4 @@ export function downloadBlob(name: string, data: BlobPart, type: string) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 3000);
 }
-export const safeName = (s: string) => s.replace(/[^\w\-]+/g, '_') || 'sito';
+export const safeName = (s: string) => s.replace(/[^\w\-]+/g, '_') || t('sito');

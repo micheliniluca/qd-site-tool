@@ -4,6 +4,7 @@ import { rectCorners, type Vec } from './geometry';
 import type { SiteEval } from './evaluate';
 import type { Safeguard } from './safeguard';
 import type { Envelope } from './envelope';
+import { t } from '../i18n';
 
 export const DXF_LAYERS: Record<string, number> = {
   QD_MAGAZZINI: 1, QD_ES_EDIFICI: 8, QD_ES_LINEE: 3, QD_RECINZIONI: 9, QD_VIABILITA: 252, QD_BARRICATE: 30,
@@ -11,8 +12,8 @@ export const DXF_LAYERS: Record<string, number> = {
 };
 
 /** DXF R12 è ANSI: si traslitterano i caratteri non ASCII. */
-export function ascii(t: string): string {
-  return t.replace(/≥/g, '>=').replace(/≤/g, '<=').replace(/[·•]/g, '-').replace(/[–—]/g, '-').replace(/[“”]/g, '"').replace(/[’‘]/g, "'")
+export function ascii(x: string): string {
+  return x.replace(/≥/g, '>=').replace(/≤/g, '<=').replace(/[·•]/g, '-').replace(/[–—]/g, '-').replace(/[“”]/g, '"').replace(/[’‘]/g, "'")
     .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7e]/g, '?');
 }
 
@@ -25,8 +26,8 @@ class Dxf {
     for (const p of pts) { this.g(0, 'VERTEX'); this.g(8, layer); this.g(10, p.x); this.g(20, p.y); this.g(30, 0); }
     this.g(0, 'SEQEND'); this.g(8, layer);
   }
-  text(layer: string, p: Vec, h: number, t: string, rot = 0) {
-    this.g(0, 'TEXT'); this.g(8, layer); this.g(10, p.x); this.g(20, p.y); this.g(30, 0); this.g(40, h); this.g(1, ascii(t));
+  text(layer: string, p: Vec, h: number, s: string, rot = 0) {
+    this.g(0, 'TEXT'); this.g(8, layer); this.g(10, p.x); this.g(20, p.y); this.g(30, 0); this.g(40, h); this.g(1, ascii(s));
     if (rot) this.g(50, rot);
   }
 }
@@ -59,7 +60,7 @@ export function buildDxf(p: Project, site: SiteEval, safeguards: Map<string, Saf
       if (o.struct === 'ecm' || (o.struct === 'heavy' && o.frontDoor)) d.poly('QD_MAGAZZINI', [c[3], c[2]], false);   // facciata frontale
       const l = magazineLoad(o);
       d.text('QD_TESTI', { x: o.cx, y: o.cy + th * 0.6 }, th, o.name);
-      d.text('QD_TESTI', { x: o.cx, y: o.cy - th * 0.9 }, th * 0.7, l.neqQd >= 1 ? `NEQ ${Math.round(l.neqQd)} kg` : 'vuoto');
+      d.text('QD_TESTI', { x: o.cx, y: o.cy - th * 0.9 }, th * 0.7, l.neqQd >= 1 ? `NEQ ${Math.round(l.neqQd)} kg` : t('vuoto'));
     } else if (o.kind === 'building') {
       d.poly('QD_ES_EDIFICI', rectCorners(o), true);
       d.text('QD_TESTI', { x: o.cx, y: o.cy }, th, `${o.name} (ES ${o.es})`);
@@ -80,7 +81,7 @@ export function buildDxf(p: Project, site: SiteEval, safeguards: Map<string, Saf
   for (const r of env?.rings ?? []) d.poly('QD_INVILUPPO', r, true);
   if (env?.rings.length) {
     const top = env.rings.flat().reduce((a, q) => (q.y > a.y ? q : a));
-    d.text('QD_INVILUPPO', { x: top.x, y: top.y + th * 0.4 }, th, 'Inviluppo delle linee di salvaguardia');
+    d.text('QD_INVILUPPO', { x: top.x, y: top.y + th * 0.4 }, th, t('Inviluppo delle linee di salvaguardia'));
   }
   for (const g of site.groups) {
     const ms = g.members.map((id) => p.objects.find((o) => o.id === id)).filter((o): o is NonNullable<typeof o> => !!o && isRect(o));
@@ -88,9 +89,9 @@ export function buildDxf(p: Project, site: SiteEval, safeguards: Map<string, Saf
       const a = p.objects.find((o) => o.id === l.a), b = p.objects.find((o) => o.id === l.b);
       if (a && b && isRect(a) && isRect(b)) d.poly('QD_SITI_UNICI', [{ x: a.cx, y: a.cy }, { x: b.cx, y: b.cy }], false);
     }
-    if (ms.length && isRect(ms[0])) d.text('QD_SITI_UNICI', { x: ms[0].cx, y: ms[0].cy - th * 2.5 }, th * 0.8, `Sito unico NEQ ${Math.round(g.load.neqQd)} kg`);
+    if (ms.length && isRect(ms[0])) d.text('QD_SITI_UNICI', { x: ms[0].cx, y: ms[0].cy - th * 2.5 }, th * 0.8, t('Sito unico NEQ {neq} kg', { neq: Math.round(g.load.neqQd) }));
   }
-  d.text('QD_BOZZA', { x: min.x, y: min.y - th * 3 }, th * 1.5, `BOZZA - da verificare e firmare a cura di personale qualificato - AASTP-1 Ed. D V1 - ${p.name} - ${new Date().toISOString().slice(0, 10)}`);
+  d.text('QD_BOZZA', { x: min.x, y: min.y - th * 3 }, th * 1.5, t('BOZZA - da verificare e firmare a cura di personale qualificato - AASTP-1 Ed. D V1 - {name} - {date}', { name: p.name, date: new Date().toISOString().slice(0, 10) }));
   d.g(0, 'ENDSEC');
   d.g(0, 'EOF');
   return d.out.join('\r\n') + '\r\n';

@@ -24,8 +24,13 @@ import { Canvas, type Tool, type View } from './Canvas';
 import { demoProject } from './demo';
 import { Inspector } from './Inspector';
 import { PairDetail, PairsTable, SiteCard } from './Results';
+import { N_, setLang, t, useLang } from '../i18n';
+import { Splitter } from './Splitter';
 
 const LS_KEY = 'qd-site-tool:project';
+const LAYOUT_KEY = 'qd-site-tool:layout';
+interface Layout { pal?: number; side?: number; pairs?: number }
+const loadLayout = (): Layout => { try { return JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? '{}') as Layout; } catch { return {}; } };
 
 interface Hist { past: Project[]; present: Project; future: Project[] }
 
@@ -77,21 +82,30 @@ export function App() {
 
   /* ---- salvataggio automatico nel browser ---- */
   useEffect(() => {
-    const t = setTimeout(() => {
+    const tm = setTimeout(() => {
       try { localStorage.setItem(LS_KEY, serialize({ ...project, view })); }
       catch { try { localStorage.setItem(LS_KEY, serialize({ ...project, background: null, view })); } catch { /* ignora */ } }
     }, 600);
-    return () => clearTimeout(t);
+    return () => clearTimeout(tm);
   }, [project, view]);
 
   /* ---- calcolo ---- */
-  const site = useMemo(() => evaluateSite(project), [project.objects, project.choices, project.sharedCover, project.risks, project.options]); // eslint-disable-line react-hooks/exhaustive-deps
+  const lang = useLang();
+  const [layout, setLayout] = useState<Layout>(loadLayout);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const setPanel = (k: keyof Layout, v: number | undefined) => setLayout((l) => {
+    const n = { ...l, [k]: v };
+    try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(n)); } catch { /* storage non disponibile */ }
+    return n;
+  });
+  const panelPx = (sel: string, dim: 'width' | 'height') => mainRef.current?.querySelector(sel)?.getBoundingClientRect()[dim] ?? 0;   // i testi prodotti dal calcolo (motivazioni, etichette) seguono la lingua
+  const site = useMemo(() => evaluateSite(project), [project.objects, project.choices, project.sharedCover, project.risks, project.options, lang]); // eslint-disable-line react-hooks/exhaustive-deps
   const safeguards = useMemo(() => {
     const m = new Map<string, Safeguard>();
     // per i siti unici la linea di ogni magazzino usa il contenuto aggregato
     if (showSg || showEnv) for (const o of project.objects) if (isPes(o)) m.set(o.id, safeguard(o, sgRow, 360, site.groupOf.get(o.id)?.load.cases));
     return m;
-  }, [project.objects, showSg, showEnv, sgRow, site]);
+  }, [project.objects, showSg, showEnv, sgRow, site, lang]);
   const env = useMemo(() => (showEnv ? envelope([...safeguards.values()].map((s) => s.pts)) : null), [showEnv, safeguards]);
   // nei documenti (tavola, DXF, relazione) vanno solo le linee visibili a schermo
   const shownSg = useMemo(() => (showSg ? safeguards : new Map<string, Safeguard>()), [showSg, safeguards]);
@@ -149,11 +163,11 @@ export function App() {
   const setOptions = (o: Partial<Project['options']>) => commit((p) => ({ ...p, options: { ...p.options, ...o } }));
   const openInventory = async (f: File) => {
     try { setImportPrev({ ...(await readInventoryFile(f)), file: f.name }); }
-    catch (e) { setMsg(`Errore nella lettura del file: ${(e as Error).message}`); }
+    catch (e) { setMsg(t('Errore nella lettura del file: {err}', { err: (e as Error).message })); }
   };
   const applyImport = (byMag: Map<string, Item[]>) => {
     commit((p) => ({ ...p, objects: p.objects.map((o) => (byMag.has(o.id) ? { ...(o as Magazine), contentMode: 'inventory', items: byMag.get(o.id)! } : o)) }));
-    setMsg(`Inventario importato in ${byMag.size} magazzini.`);
+    setMsg(t('Inventario importato in {n} magazzini.', { n: byMag.size }));
     setImportPrev(null);
   };
   const setChoice = (key: string, c: PairChoice) => commit((p) => {
@@ -166,7 +180,7 @@ export function App() {
     const blob = new Blob([serialize({ ...project, view })], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `${project.name.replace(/[^\w\-]+/g, '_') || 'sito'}.qdsite.json`;
+    a.download = `${project.name.replace(/[^\w\-]+/g, '_') || t('sito')}.qdsite.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   };
@@ -176,8 +190,8 @@ export function App() {
       setHist({ past: [], present: p, future: [] });
       setView(p.view ?? fitView(p));
       setSelectedId(null); setPairSel(null); setTab('site');
-      setMsg(`Aperto: ${f.name}`);
-    } catch (e) { setMsg(`Errore: ${(e as Error).message}`); }
+      setMsg(t('Aperto: {name}', { name: f.name }));
+    } catch (e) { setMsg(t('Errore: {err}', { err: (e as Error).message })); }
   };
   const loadBg = async (f: File) => {
     try {
@@ -185,28 +199,28 @@ export function App() {
       if (/\.pdf$/i.test(f.name)) {
         const n = await pdfPageCount(f);
         if (n > 1) {
-          const r = await ask({ title: 'Pagina del PDF', message: `Il PDF ha ${n} pagine. Quale pagina usare come sfondo?`, fields: [{ key: 'p', label: 'Pagina', type: 'number', value: '1', required: true }], ok: 'Carica' });
+          const r = await ask({ title: t('Pagina del PDF'), message: t('Il PDF ha {n} pagine. Quale pagina usare come sfondo?', { n }), fields: [{ key: 'p', label: t('Pagina'), type: 'number', value: '1', required: true }], ok: t('Carica') });
           if (!r) return;
           page = Math.min(n, Math.max(1, parseInt(r.p, 10) || 1));
         }
       }
-      setMsg('Caricamento dello sfondo…');
+      setMsg(t('Caricamento dello sfondo…'));
       const widthM = Math.round(1000 / view.k * 0.8) || 500;
       const bg = await loadBackground(f, { x: view.x, y: view.y }, widthM, page);
       commit((p) => ({ ...p, background: bg }));
-      setMsg('Sfondo caricato con scala provvisoria: usa “Calibra” cliccando due punti di distanza nota.');
+      setMsg(t('Sfondo caricato con scala provvisoria: usa “Calibra” cliccando due punti di distanza nota.'));
       setTool({ k: 'calib' });
-    } catch (e) { setMsg(`Errore nel caricamento dello sfondo: ${(e as Error).message}`); }
+    } catch (e) { setMsg(t('Errore nel caricamento dello sfondo: {err}', { err: (e as Error).message })); }
   };
   const onCalib = async (p1: Vec, p2: Vec) => {
-    if (!project.background) { setMsg('Nessuno sfondo da calibrare.'); return; }
+    if (!project.background) { setMsg(t('Nessuno sfondo da calibrare.')); return; }
     const measured = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-    const r = await ask({ title: 'Calibrazione dello sfondo', message: `Sul disegno i due punti distano ora ${measured.toFixed(2)} m. Indica la distanza reale: il primo punto resta fermo.`,
-      fields: [{ key: 'd', label: 'Distanza reale (m)', value: measured.toFixed(2), required: true }], ok: 'Calibra' });
+    const r = await ask({ title: t('Calibrazione dello sfondo'), message: t('Sul disegno i due punti distano ora {d} m. Indica la distanza reale: il primo punto resta fermo.', { d: measured.toFixed(2) }),
+      fields: [{ key: 'd', label: t('Distanza reale (m)'), value: measured.toFixed(2), required: true }], ok: t('Calibra') });
     const real = r ? parseFloat(r.d.replace(',', '.')) : NaN;
     if (!(real > 0)) return;
     commit((p) => ({ ...p, background: calibrate(p.background!, p1, p2, real) }));
-    setMsg(`Sfondo calibrato: ${real} m tra i due punti.`);
+    setMsg(t('Sfondo calibrato: {d} m tra i due punti.', { d: real }));
     setTool({ k: 'select' });
   };
 
@@ -221,15 +235,15 @@ export function App() {
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  const sgLabel = sgRow === '24' ? 'IBD (ES 24)' : sgRow === '25' ? 'costruzioni vulnerabili (ES 25)' : `PTRD (ES ${sgRow})`;
+  const sgLabel = sgRow === '24' ? 'IBD (ES 24)' : sgRow === '25' ? t('costruzioni vulnerabili (ES 25)') : `PTRD (ES ${sgRow})`;
   const makeReport = async () => {
-    const r = await ask({ title: 'Relazione QD e bozza di licenza', message: 'Si genera un file HTML autonomo (da aprire nel browser e stampare in PDF). Il calcolo del NEQ ammesso può richiedere qualche secondo.',
-      fields: [{ key: 'author', label: 'Redatto da (nome e ruolo)' }], ok: 'Genera' });
+    const r = await ask({ title: t('Relazione QD e bozza di licenza'), message: t('Si genera un file HTML autonomo (da aprire nel browser e stampare in PDF). Il calcolo del NEQ ammesso può richiedere qualche secondo.'),
+      fields: [{ key: 'author', label: t('Redatto da (nome e ruolo)') }], ok: t('Genera') });
     if (!r) return;
-    setMsg('Generazione della relazione…');
+    setMsg(t('Generazione della relazione…'));
     await new Promise((res) => setTimeout(res, 30));
-    downloadBlob(`${safeName(project.name)}_relazione_QD_BOZZA.html`, buildReportHtml(project, shownSg, { author: r.author, fills: fills ?? undefined }), 'text/html');
-    setMsg('Relazione scaricata (BOZZA).');
+    downloadBlob(t('{name}_relazione_QD_BOZZA.html', { name: safeName(project.name) }), buildReportHtml(project, shownSg, { author: r.author, fills: fills ?? undefined }), 'text/html');
+    setMsg(t('Relazione scaricata (BOZZA).'));
   };
   const groups = [...new Set(PRESETS.map((p) => p.group))];
   const activePreset = tool.k === 'place' || tool.k === 'line' ? tool.preset : null;
@@ -239,86 +253,94 @@ export function App() {
   return (
     <div className="app">
       <header className="top">
-        <div className="brand"><b>QD Sito</b><span>{NORM_EDITION}</span></div>
-        <input className="pname" value={project.name} onChange={(e) => edit((p) => ({ ...p, name: e.target.value }))} onFocus={beginEdit} title="Nome del sito" />
+        <div className="brand"><b>QD Sito</b><span>{t(NORM_EDITION)}</span></div>
+        <input className="pname" value={project.name} onChange={(e) => edit((p) => ({ ...p, name: e.target.value }))} onFocus={beginEdit} title={t('Nome del sito')} />
         <nav className="views">
-          {([['plan', 'Planimetria'], ['barricate', 'Barricate'], ['stampa', 'Tavola in scala'], ['revisioni', 'Revisioni'], ['help', 'Help']] as const).map(([k, l]) => (
-            <button key={k} className={viewMode === k ? 'on' : ''} onClick={() => setViewMode(k)}>{l}</button>
+          {([['plan', N_('Planimetria')], ['barricate', N_('Barricate')], ['stampa', N_('Tavola in scala')], ['revisioni', N_('Revisioni')], ['help', N_('Help')]] as const).map(([k, l]) => (
+            <button key={k} className={viewMode === k ? 'on' : ''} onClick={() => setViewMode(k)}>{t(l)}</button>
           ))}
         </nav>
         <div className="tb">
           <button onClick={async () => {
-            const r = await ask({ title: 'Nuovo progetto', message: 'Si apre un progetto vuoto. Il progetto attuale resta recuperabile con “Annulla” finché la pagina è aperta; per conservarlo usa prima “Salva JSON”.', ok: 'Nuovo progetto vuoto', danger: true });
+            const r = await ask({ title: t('Nuovo progetto'), message: t('Si apre un progetto vuoto. Il progetto attuale resta recuperabile con “Annulla” finché la pagina è aperta; per conservarlo usa prima “Salva JSON”.'), ok: t('Nuovo progetto vuoto'), danger: true });
             if (!r) return;
             commit(() => emptyProject()); setView({ x: 0, y: 0, k: 1 }); setSelectedId(null); setPairSel(null); setTab('site'); setViewMode('plan');
-          }}>Nuovo</button>
-          <button onClick={() => fileRef.current?.click()}>Apri…</button>
-          <button onClick={saveJson}>Salva JSON</button>
-          <button onClick={() => { commit(() => demoProject()); setView(fitView(demoProject())); setSelectedId(null); setPairSel(null); }}>Esempio</button>
+          }}>{t('Nuovo')}</button>
+          <button onClick={() => fileRef.current?.click()}>{t('Apri…')}</button>
+          <button onClick={saveJson}>{t('Salva JSON')}</button>
+          <button onClick={() => { commit(() => demoProject()); setView(fitView(demoProject())); setSelectedId(null); setPairSel(null); }}>{t('Esempio')}</button>
           <span className="sep" />
-          <button onClick={undo} disabled={!hist.past.length} title="Ctrl+Z">Annulla</button>
-          <button onClick={redo} disabled={!hist.future.length} title="Ctrl+Y">Ripeti</button>
+          <button onClick={undo} disabled={!hist.past.length} title="Ctrl+Z">{t('Annulla')}</button>
+          <button onClick={redo} disabled={!hist.future.length} title="Ctrl+Y">{t('Ripeti')}</button>
           <span className="sep" />
           <details className="menu" ref={docsRef}>
-            <summary>Documenti</summary>
+            <summary>{t('Documenti')}</summary>
             <div className="menu-list" onClick={() => docsRef.current?.removeAttribute('open')}>
-              <button onClick={() => { downloadWorkbook(project); setMsg('Excel di verifica scaricato (BOZZA).'); }}>Excel di verifica (formule aperte)</button>
-              <button onClick={() => { downloadBlob(`${safeName(project.name)}_QD_BOZZA.dxf`, buildDxf(project, site, shownSg, env), 'application/dxf'); setMsg(`DXF scaricato con le linee ${sgLabel}.`); }}>DXF con linee etichettate</button>
-              <button onClick={makeReport}>Relazione e bozza di licenza (HTML)</button>
-              <button onClick={() => setViewMode('stampa')}>Tavola stampabile in scala…</button>
+              <button onClick={() => { downloadWorkbook(project); setMsg(t('Excel di verifica scaricato (BOZZA).')); }}>{t('Excel di verifica (formule aperte)')}</button>
+              <button onClick={() => { downloadBlob(t('{name}_QD_BOZZA.dxf', { name: safeName(project.name) }), buildDxf(project, site, shownSg, env), 'application/dxf'); setMsg(t('DXF scaricato con le linee {label}.', { label: sgLabel })); }}>{t('DXF con linee etichettate')}</button>
+              <button onClick={makeReport}>{t('Relazione e bozza di licenza (HTML)')}</button>
+              <button onClick={() => setViewMode('stampa')}>{t('Tavola stampabile in scala…')}</button>
               <hr />
-              <button onClick={() => invRef.current?.click()}>Importa inventario da Excel…</button>
-              <button onClick={downloadTemplate}>Modello Excel dell’inventario</button>
-              <button onClick={() => exportInventory(project)}>Esporta inventario</button>
+              <button onClick={() => invRef.current?.click()}>{t('Importa inventario da Excel…')}</button>
+              <button onClick={downloadTemplate}>{t('Modello Excel dell’inventario')}</button>
+              <button onClick={() => exportInventory(project)}>{t('Esporta inventario')}</button>
             </div>
           </details>
         </div>
+        <div className="lang" role="group" aria-label="Lingua / Language">
+          <button className={lang === 'it' ? 'on' : ''} onClick={() => setLang('it')} title="Italiano" aria-pressed={lang === 'it'}>IT</button>
+          <button className={lang === 'en' ? 'on' : ''} onClick={() => setLang('en')} title="English" aria-pressed={lang === 'en'}>EN</button>
+        </div>
         {viewMode === 'plan' && <div className="tb tb2">
-          <button onClick={() => bgRef.current?.click()} title="Immagine o PDF della planimetria">Sfondo…</button>
+          <button onClick={() => bgRef.current?.click()} title={t('Immagine o PDF della planimetria')}>{t('Sfondo…')}</button>
           {project.background && <>
-            <button className={tool.k === 'calib' ? 'on' : ''} onClick={() => setTool(tool.k === 'calib' ? { k: 'select' } : { k: 'calib' })}>Calibra</button>
-            <button className={tool.k === 'movebg' ? 'on' : ''} onClick={() => setTool(tool.k === 'movebg' ? { k: 'select' } : { k: 'movebg' })}>Sposta sfondo</button>
-            <input type="range" min={0.1} max={1} step={0.05} value={project.background.opacity} title="Opacità dello sfondo"
+            <button className={tool.k === 'calib' ? 'on' : ''} onClick={() => setTool(tool.k === 'calib' ? { k: 'select' } : { k: 'calib' })}>{t('Calibra')}</button>
+            <button className={tool.k === 'movebg' ? 'on' : ''} onClick={() => setTool(tool.k === 'movebg' ? { k: 'select' } : { k: 'movebg' })}>{t('Sposta sfondo')}</button>
+            <input type="range" min={0.1} max={1} step={0.05} value={project.background.opacity} title={t('Opacità dello sfondo')}
               onChange={(e) => edit((p) => ({ ...p, background: { ...p.background!, opacity: +e.target.value } }))} />
-            <button onClick={() => commit((p) => ({ ...p, background: null }))}>Rimuovi sfondo</button>
+            <button onClick={() => commit((p) => ({ ...p, background: null }))}>{t('Rimuovi sfondo')}</button>
           </>}
           <span className="sep" />
-          <button className={tool.k === 'measure' ? 'on' : ''} onClick={() => setTool(tool.k === 'measure' ? { k: 'select' } : { k: 'measure' })}>Misura</button>
-          <button onClick={() => setView(fitView(project, 900, 560))}>Adatta vista</button>
+          <button className={tool.k === 'measure' ? 'on' : ''} onClick={() => setTool(tool.k === 'measure' ? { k: 'select' } : { k: 'measure' })}>{t('Misura')}</button>
+          <button onClick={() => setView(fitView(project, 900, 560))}>{t('Adatta vista')}</button>
           <span className="sep" />
-          <label className="chk"><input type="checkbox" checked={showSg} onChange={(e) => setShowSg(e.target.checked)} /> Linee</label>
-          <label className="chk" title="Contorno dell'unione di tutte le linee (zona di salvaguardia combinata)"><input type="checkbox" checked={showEnv} onChange={(e) => setShowEnv(e.target.checked)} /> Inviluppo</label>
-          <select value={sgRow} onChange={(e) => setSgRow(e.target.value as EsRow)} disabled={!showSg && !showEnv} title="Linea di salvaguardia da tracciare">
-            <option value="24">IBD (ES 24)</option><option value="25">Costruzioni vulnerabili (ES 25)</option>
-            <option value="21">PTRD bassa densità (ES 21)</option><option value="22">PTRD media densità (ES 22)</option><option value="23">PTRD alta densità (ES 23)</option>
+          <label className="chk"><input type="checkbox" checked={showSg} onChange={(e) => setShowSg(e.target.checked)} /> {t('Linee')}</label>
+          <label className="chk" title={t("Contorno dell'unione di tutte le linee (zona di salvaguardia combinata)")}><input type="checkbox" checked={showEnv} onChange={(e) => setShowEnv(e.target.checked)} /> {t('Inviluppo')}</label>
+          <select value={sgRow} onChange={(e) => setSgRow(e.target.value as EsRow)} disabled={!showSg && !showEnv} title={t('Linea di salvaguardia da tracciare')}>
+            <option value="24">IBD (ES 24)</option><option value="25">{t('Costruzioni vulnerabili (ES 25)')}</option>
+            <option value="21">{t('PTRD bassa densità (ES 21)')}</option><option value="22">{t('PTRD media densità (ES 22)')}</option><option value="23">{t('PTRD alta densità (ES 23)')}</option>
           </select>
-          <label className="chk"><input type="checkbox" checked={showSectors} onChange={(e) => setShowSectors(e.target.checked)} /> Settori</label>
+          <label className="chk"><input type="checkbox" checked={showSectors} onChange={(e) => setShowSectors(e.target.checked)} /> {t('Settori')}</label>
         </div>}
         <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) openJson(f); e.target.value = ''; }} />
         <input ref={invRef} type="file" accept=".xlsx,.xls,.csv,.ods" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) openInventory(f); e.target.value = ''; }} />
         <input ref={bgRef} type="file" accept="image/*,.pdf,application/pdf" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) loadBg(f); e.target.value = ''; }} />
       </header>
-      <div className="draft">{DRAFT_NOTICE} · {NORM_EDITION}</div>
+      <div className="draft">{t(DRAFT_NOTICE)} · {t(NORM_EDITION)}</div>
       {msg && <div className="msg" onClick={() => setMsg(null)}>{msg} <span>✕</span></div>}
 
       {viewMode === 'barricate' && <BarricadeView project={project} onChange={(list) => commit((p) => ({ ...p, barricadeSections: list }))} />}
       {viewMode === 'stampa' && <PrintView project={project} site={site} safeguards={shownSg} envelope={env} sgLabel={sgLabel} />}
       {viewMode === 'revisioni' && <RevisionsView project={project} commit={commit} />}
       {viewMode === 'help' && <HelpView />}
-      <div className="main" hidden={viewMode !== 'plan'}>
+      <div className="main" hidden={viewMode !== 'plan'} ref={mainRef} style={{
+        ...(layout.pal ? { '--pal-w': `${layout.pal}px` } : {}), ...(layout.side ? { '--side-w': `${layout.side}px` } : {}), ...(layout.pairs ? { '--pairs-h': `${layout.pairs}px` } : {}),
+      } as React.CSSProperties}>
         <aside className="palette">
-          <button className={`tool ${tool.k === 'select' ? 'on' : ''}`} onClick={() => setTool({ k: 'select' })}>Seleziona / sposta</button>
+          <button className={`tool ${tool.k === 'select' ? 'on' : ''}`} onClick={() => setTool({ k: 'select' })}>{t('Seleziona / sposta')}</button>
           {groups.map((g) => (
             <div key={g} className="pgroup">
-              <div className="pgh">{g}</div>
+              <div className="pgh">{t(g)}</div>
               {PRESETS.filter((p) => p.group === g).map((p) => (
-                <button key={p.id} className={`preset ${activePreset === p.id ? 'on' : ''}`} onClick={() => pickPreset(p.id)} title={p.hint}>
-                  <span>{p.label}</span><small>{p.hint}</small>
+                <button key={p.id} className={`preset ${activePreset === p.id ? 'on' : ''}`} onClick={() => pickPreset(p.id)} title={t(p.hint)}>
+                  <span>{t(p.label)}</span><small>{t(p.hint)}</small>
                 </button>
               ))}
             </div>
           ))}
         </aside>
+        <Splitter dir="col" sign={1} min={150} max={() => Math.max(200, window.innerWidth * 0.4)} size={() => panelPx('.palette', 'width')}
+          onSize={(v) => setPanel('pal', v)} onReset={() => setPanel('pal', undefined)} className="after-palette" />
 
         <section className="center">
           <Canvas
@@ -328,25 +350,29 @@ export function App() {
             onBeginEdit={beginEdit} onEdit={edit} onPlace={place} onFinishLine={finishLine} onCalib={onCalib}
             onToolDone={() => setTool({ k: 'select' })}
           />
+          <Splitter dir="row" sign={-1} min={80} max={() => Math.max(120, panelPx('.center', 'height') - 140)} size={() => panelPx('.pairs', 'height')}
+            onSize={(v) => setPanel('pairs', v)} onReset={() => setPanel('pairs', undefined)} className="above-pairs" />
           <PairsTable project={project} site={site} selectedPair={pairSel} selectedId={selectedId}
             onPick={(k) => { setPairSel(k === pairSel ? null : k); setTab('pair'); }} />
         </section>
 
         <aside className="side">
+          <Splitter dir="col" sign={-1} min={260} max={() => Math.max(300, window.innerWidth * 0.65)} size={() => panelPx('.side', 'width')}
+            onSize={(v) => setPanel('side', v)} onReset={() => setPanel('side', undefined)} className="at-left" />
           <nav className="tabs">
-            <button className={tab === 'obj' ? 'on' : ''} onClick={() => setTab('obj')}>Oggetto</button>
-            <button className={tab === 'pair' ? 'on' : ''} onClick={() => setTab('pair')}>Coppia</button>
-            <button className={tab === 'site' ? 'on' : ''} onClick={() => setTab('site')}>Scheda sito</button>
-            <button className={tab === 'mgmt' ? 'on' : ''} onClick={() => setTab('mgmt')}>Gestione</button>
+            <button className={tab === 'obj' ? 'on' : ''} onClick={() => setTab('obj')}>{t('Oggetto')}</button>
+            <button className={tab === 'pair' ? 'on' : ''} onClick={() => setTab('pair')}>{t('Coppia')}</button>
+            <button className={tab === 'site' ? 'on' : ''} onClick={() => setTab('site')}>{t('Scheda sito')}</button>
+            <button className={tab === 'mgmt' ? 'on' : ''} onClick={() => setTab('mgmt')}>{t('Gestione')}</button>
           </nav>
           <div className="side-body">
             {tab === 'obj' && (sel
               ? <Inspector key={sel.id} obj={sel} site={site} project={project} fill={fills?.get(sel.id)} onChange={changeObj} onDelete={deleteSel} onDuplicate={duplicateSel} onRisk={setRisk} onShared={setShared} />
-              : <p className="hint pad">Seleziona un oggetto sulla planimetria, oppure scegli un tipo dal menù a sinistra e clicca sulla planimetria per inserirlo.</p>)}
+              : <p className="hint pad">{t('Seleziona un oggetto sulla planimetria, oppure scegli un tipo dal menù a sinistra e clicca sulla planimetria per inserirlo.')}</p>)}
             {tab === 'pair' && (pair && pes && esObj
               ? <PairDetail pair={pair} pes={pes} es={esObj} choice={project.choices[pairKey(pair.pesId, pair.esId)]} onChoice={(c) => setChoice(pair.key, c)}
                   project={project} group={site.groupOf.get(pair.pesId)} onRisk={setRisk} />
-              : <p className="hint pad">Seleziona una riga nella tabella delle coppie per vederne la spiegazione.</p>)}
+              : <p className="hint pad">{t('Seleziona una riga nella tabella delle coppie per vederne la spiegazione.')}</p>)}
             {tab === 'mgmt' && <Management project={project} fills={fills} setFills={setFills}
               onSelect={(id) => { setSelectedId(id); }} onPick={(k) => { setPairSel(k); setTab('pair'); }}
               onOptions={setOptions} onRemoveRisk={(k) => setRisk(k, null)} />}

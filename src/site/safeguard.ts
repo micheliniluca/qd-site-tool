@@ -6,6 +6,7 @@ import type { LoadCase } from '../engine/mixing';
 import { regionsAt, toLocal, v, type Vec } from './geometry';
 import { pesColumns, pesTable, reducedIbdPrefer, SECTOR_IT, type ColumnRegion } from './evaluate';
 import { magazineLoad, type Magazine } from './model';
+import { t } from '../i18n';
 
 export interface SafeguardPiece { eff: Effect; region: ColumnRegion; req: number | null; ref: string }
 export interface Safeguard { esRow: EsRow; pts: Vec[]; pieces: SafeguardPiece[]; unknown: boolean; maxReq: number; label: string }
@@ -76,6 +77,6 @@ export function safeguard(m: Magazine, esRow: EsRow, nRays = 360, cases?: LoadCa
   const vals = [...bySector.entries()].sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
   const label = vals.every((x) => x[1] === vals[0][1])
     ? `${vals[0]?.[1] ?? 0} m`
-    : vals.map(([k, d]) => `${SECTOR_IT[k as keyof typeof SECTOR_IT]} ${d} m`).join(' · ');
+    : vals.map(([k, d]) => `${t(SECTOR_IT[k as keyof typeof SECTOR_IT])} ${d} m`).join(' · ');
   return { esRow, pts, pieces, unknown, maxReq, label };
 }

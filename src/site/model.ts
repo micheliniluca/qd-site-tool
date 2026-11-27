@@ -1,5 +1,6 @@
 /* Modello del progetto di sito (salvato in JSON). Coordinate in metri, y verso nord. */
 import type { EsRow, Hd } from '../engine/matrix';
+import { N_, t } from '../i18n';
 import { mixHd, sumByHd, type Cg, type HdFull, type MixResult } from '../engine/mixing';
 import type { BarricadeSectionInput } from './barricade';
 import type { Revision } from './revisions';
@@ -41,9 +42,9 @@ export interface Magazine extends Rect {
 }
 
 export const ES_AS_NAME: Record<'18' | '19' | '20', string> = {
-  '18': 'ES 18 — officina esplosivi con tetto protettivo, barricata',
-  '19': 'ES 19 — officina esplosivi senza tetto protettivo, barricata',
-  '20': 'ES 20 — officina esplosivi non barricata',
+  '18': N_('ES 18 — officina esplosivi con tetto protettivo, barricata'),
+  '19': N_('ES 19 — officina esplosivi senza tetto protettivo, barricata'),
+  '20': N_('ES 20 — officina esplosivi non barricata'),
 };
 
 export interface Building extends Rect {
@@ -117,7 +118,7 @@ export const newId = (p: string) => `${p}${Date.now().toString(36)}${(seq++).toS
 export function emptyProject(): Project {
   const now = new Date().toISOString();
   return {
-    format: 'qd-site-tool', version: 2, edition: 'AASTP-1 Ed. D V1', name: 'Nuovo sito',
+    format: 'qd-site-tool', version: 2, edition: 'AASTP-1 Ed. D V1', name: t('Nuovo sito'),
     created: now, modified: now, objects: [], background: null, choices: {},
     sharedCover: [], risks: {}, options: { ...DEFAULT_OPTIONS }, barricadeSections: [], revisions: [],
   };
@@ -142,51 +143,51 @@ const lin = (at: Vec, name: string, role: LineRole, es: EsRow | null): Line => (
 });
 
 export const PRESETS: Preset[] = [
-  { id: 'ecm7', group: 'Magazzini (PES / ES)', label: 'ECM 7 bar (Part II)', hint: 'Table 1 (a/b/c) · come ES: righe 1–3', make: (a, n) => mag(a, n, 9, 26, { struct: 'ecm', ecmClass: '7bar' }) },
-  { id: 'ecm3', group: 'Magazzini (PES / ES)', label: 'ECM 3 bar (Part II)', hint: 'Table 1 · come ES: righe 4–6', make: (a, n) => mag(a, n, 9, 26, { struct: 'ecm', ecmClass: '3bar' }) },
-  { id: 'ecmhv', group: 'Magazzini (PES / ES)', label: 'ECM non conforme, testata/porte HV', hint: 'Table 1 · come ES: riga 7 (porta verso il PES), altrimenti 9/10', make: (a, n) => mag(a, n, 9, 26, { struct: 'ecm', ecmClass: 'nc-hv' }) },
-  { id: 'ecmbar', group: 'Magazzini (PES / ES)', label: 'ECM non conforme, porta barricata', hint: 'Table 1 · come ES: riga 8 (porta verso il PES), altrimenti 9/10', make: (a, n) => mag(a, n, 9, 26, { struct: 'ecm', ecmClass: 'nc-barr' }) },
-  { id: 'ecmnc', group: 'Magazzini (PES / ES)', label: 'ECM non conforme', hint: 'Table 1 · come ES: righe 9–11', make: (a, n) => mag(a, n, 9, 26, { struct: 'ecm', ecmClass: 'nc' }) },
-  { id: 'heavy', group: 'Magazzini (PES / ES)', label: 'Pareti pesanti, tetto protettivo', hint: 'Table 2 (d) · come ES: riga 12', make: (a, n) => mag(a, n, 15, 25, { struct: 'heavy', roof: true, frontDoor: false }) },
-  { id: 'heavyd', group: 'Magazzini (PES / ES)', label: 'Pareti pesanti, porta sul fronte', hint: 'Table 2 (e) verso il fronte, (d) altrove · ES: riga 12', make: (a, n) => mag(a, n, 15, 25, { struct: 'heavy', roof: true, frontDoor: true }) },
-  { id: 'heavynr', group: 'Magazzini (PES / ES)', label: 'Pareti pesanti, senza tetto', hint: 'Table 2 (f) · come ES: riga 13', make: (a, n) => mag(a, n, 15, 25, { struct: 'heavy', roof: false }) },
-  { id: 'medb', group: 'Magazzini (PES / ES)', label: 'Pareti medie, barricato', hint: 'Table 3 (g) · come ES: riga 14', make: (a, n) => mag(a, n, 12, 20, { struct: 'medium', barricaded: true }) },
-  { id: 'med', group: 'Magazzini (PES / ES)', label: 'Pareti medie, non barricato', hint: 'Table 3 (h) · come ES: riga 15', make: (a, n) => mag(a, n, 12, 20, { struct: 'medium', barricaded: false }) },
-  { id: 'stackb', group: 'Magazzini (PES / ES)', label: 'Catasta / struttura leggera / veicolo, barricato', hint: 'Table 4 (i) · come ES: riga 16', make: (a, n) => mag(a, n, 10, 10, { struct: 'light', barricaded: true, neq: 1000 }) },
-  { id: 'stack', group: 'Magazzini (PES / ES)', label: 'Catasta / struttura leggera / veicolo, non barricato', hint: 'Table 4 (j) · come ES: riga 17', make: (a, n) => mag(a, n, 10, 10, { struct: 'light', barricaded: false, neq: 1000 }) },
-  { id: 'ws18', group: 'Edifici (ES)', label: 'Officina esplosivi, tetto protettivo, barricata', hint: 'ES 18', make: (a, n) => bld(a, n, '18') },
-  { id: 'ws19', group: 'Edifici (ES)', label: 'Officina esplosivi, senza tetto, barricata', hint: 'ES 19', make: (a, n) => bld(a, n, '19') },
-  { id: 'ws20', group: 'Edifici (ES)', label: 'Officina esplosivi, non barricata', hint: 'ES 20', make: (a, n) => bld(a, n, '20') },
-  { id: 'ibd', group: 'Edifici (ES)', label: 'Edificio abitato / luogo di aggregazione', hint: 'ES 24 (IBD)', make: (a, n) => bld(a, n, '24') },
-  { id: 'vuln', group: 'Edifici (ES)', label: 'Costruzione vulnerabile', hint: 'ES 25', make: (a, n) => bld(a, n, '25', 40, 25) },
-  { id: 'off', group: 'Edifici (ES)', label: 'Uffici / mensa di supporto, < 20 persone', hint: 'ES 26a', make: (a, n) => bld(a, n, '26a') },
-  { id: 'offb', group: 'Edifici (ES)', label: 'Uffici / mensa di supporto, ≥ 20 persone', hint: 'ES 26b', make: (a, n) => bld(a, n, '26b') },
-  { id: 'pol', group: 'Edifici (ES)', label: 'Deposito POL fuori terra, vitale', hint: 'ES 28b', make: (a, n) => bld(a, n, '28b', 15, 15) },
-  { id: 'polnv', group: 'Edifici (ES)', label: 'Deposito POL fuori terra, non vitale', hint: 'ES 28c', make: (a, n) => bld(a, n, '28c', 15, 15) },
-  { id: 'r21', group: 'Linee (ES)', label: 'Strada/ferrovia, bassa densità', hint: 'ES 21 (< 1000 veicoli/g)', make: (a, n) => lin(a, n, 'es', '21') },
-  { id: 'r22', group: 'Linee (ES)', label: 'Strada/ferrovia, media densità', hint: 'ES 22 (1000–5000 veicoli/g)', make: (a, n) => lin(a, n, 'es', '22') },
-  { id: 'r23', group: 'Linee (ES)', label: 'Strada/ferrovia, alta densità', hint: 'ES 23 (≥ 5000 veicoli/g)', make: (a, n) => lin(a, n, 'es', '23') },
-  { id: 'p27a', group: 'Linee (ES)', label: 'Elettrodotto, rete primaria', hint: 'ES 27a', make: (a, n) => lin(a, n, 'es', '27a') },
-  { id: 'p27b', group: 'Linee (ES)', label: 'Elettrodotto, rete normale', hint: 'ES 27b', make: (a, n) => lin(a, n, 'es', '27b') },
-  { id: 'p27c', group: 'Linee (ES)', label: 'Elettrodotto, rete minore', hint: 'ES 27c', make: (a, n) => lin(a, n, 'es', '27c') },
-  { id: 'pipe', group: 'Linee (ES)', label: 'Oleodotto protetto o interrato', hint: 'ES 28a', make: (a, n) => lin(a, n, 'es', '28a') },
-  { id: 'road', group: 'Altro', label: 'Strada interna', hint: 'viabilità del sito, non è un ES', make: (a, n) => lin(a, n, 'road', null) },
-  { id: 'fence', group: 'Altro', label: 'Recinzione / confine', hint: 'non è un ES', make: (a, n) => lin(a, n, 'fence', null) },
-  { id: 'barr', group: 'Altro', label: 'Barricata (grafica)', hint: 'Fase 1: solo disegno; l’effetto si imposta sul magazzino', make: (a, n) => lin(a, n, 'barricade', null) },
+  { id: 'ecm7', group: N_('Magazzini (PES / ES)'), label: N_('ECM 7 bar (Part II)'), hint: N_('Table 1 (a/b/c) · come ES: righe 1–3'), make: (a, n) => mag(a, n, 9, 26, { struct: 'ecm', ecmClass: '7bar' }) },
+  { id: 'ecm3', group: N_('Magazzini (PES / ES)'), label: N_('ECM 3 bar (Part II)'), hint: N_('Table 1 · come ES: righe 4–6'), make: (a, n) => mag(a, n, 9, 26, { struct: 'ecm', ecmClass: '3bar' }) },
+  { id: 'ecmhv', group: N_('Magazzini (PES / ES)'), label: N_('ECM non conforme, testata/porte HV'), hint: N_('Table 1 · come ES: riga 7 (porta verso il PES), altrimenti 9/10'), make: (a, n) => mag(a, n, 9, 26, { struct: 'ecm', ecmClass: 'nc-hv' }) },
+  { id: 'ecmbar', group: N_('Magazzini (PES / ES)'), label: N_('ECM non conforme, porta barricata'), hint: N_('Table 1 · come ES: riga 8 (porta verso il PES), altrimenti 9/10'), make: (a, n) => mag(a, n, 9, 26, { struct: 'ecm', ecmClass: 'nc-barr' }) },
+  { id: 'ecmnc', group: N_('Magazzini (PES / ES)'), label: N_('ECM non conforme'), hint: N_('Table 1 · come ES: righe 9–11'), make: (a, n) => mag(a, n, 9, 26, { struct: 'ecm', ecmClass: 'nc' }) },
+  { id: 'heavy', group: N_('Magazzini (PES / ES)'), label: N_('Pareti pesanti, tetto protettivo'), hint: N_('Table 2 (d) · come ES: riga 12'), make: (a, n) => mag(a, n, 15, 25, { struct: 'heavy', roof: true, frontDoor: false }) },
+  { id: 'heavyd', group: N_('Magazzini (PES / ES)'), label: N_('Pareti pesanti, porta sul fronte'), hint: N_('Table 2 (e) verso il fronte, (d) altrove · ES: riga 12'), make: (a, n) => mag(a, n, 15, 25, { struct: 'heavy', roof: true, frontDoor: true }) },
+  { id: 'heavynr', group: N_('Magazzini (PES / ES)'), label: N_('Pareti pesanti, senza tetto'), hint: N_('Table 2 (f) · come ES: riga 13'), make: (a, n) => mag(a, n, 15, 25, { struct: 'heavy', roof: false }) },
+  { id: 'medb', group: N_('Magazzini (PES / ES)'), label: N_('Pareti medie, barricato'), hint: N_('Table 3 (g) · come ES: riga 14'), make: (a, n) => mag(a, n, 12, 20, { struct: 'medium', barricaded: true }) },
+  { id: 'med', group: N_('Magazzini (PES / ES)'), label: N_('Pareti medie, non barricato'), hint: N_('Table 3 (h) · come ES: riga 15'), make: (a, n) => mag(a, n, 12, 20, { struct: 'medium', barricaded: false }) },
+  { id: 'stackb', group: N_('Magazzini (PES / ES)'), label: N_('Catasta / struttura leggera / veicolo, barricato'), hint: N_('Table 4 (i) · come ES: riga 16'), make: (a, n) => mag(a, n, 10, 10, { struct: 'light', barricaded: true, neq: 1000 }) },
+  { id: 'stack', group: N_('Magazzini (PES / ES)'), label: N_('Catasta / struttura leggera / veicolo, non barricato'), hint: N_('Table 4 (j) · come ES: riga 17'), make: (a, n) => mag(a, n, 10, 10, { struct: 'light', barricaded: false, neq: 1000 }) },
+  { id: 'ws18', group: N_('Edifici (ES)'), label: N_('Officina esplosivi, tetto protettivo, barricata'), hint: 'ES 18', make: (a, n) => bld(a, n, '18') },
+  { id: 'ws19', group: N_('Edifici (ES)'), label: N_('Officina esplosivi, senza tetto, barricata'), hint: 'ES 19', make: (a, n) => bld(a, n, '19') },
+  { id: 'ws20', group: N_('Edifici (ES)'), label: N_('Officina esplosivi, non barricata'), hint: 'ES 20', make: (a, n) => bld(a, n, '20') },
+  { id: 'ibd', group: N_('Edifici (ES)'), label: N_('Edificio abitato / luogo di aggregazione'), hint: N_('ES 24 (IBD)'), make: (a, n) => bld(a, n, '24') },
+  { id: 'vuln', group: N_('Edifici (ES)'), label: N_('Costruzione vulnerabile'), hint: 'ES 25', make: (a, n) => bld(a, n, '25', 40, 25) },
+  { id: 'off', group: N_('Edifici (ES)'), label: N_('Uffici / mensa di supporto, < 20 persone'), hint: 'ES 26a', make: (a, n) => bld(a, n, '26a') },
+  { id: 'offb', group: N_('Edifici (ES)'), label: N_('Uffici / mensa di supporto, ≥ 20 persone'), hint: 'ES 26b', make: (a, n) => bld(a, n, '26b') },
+  { id: 'pol', group: N_('Edifici (ES)'), label: N_('Deposito POL fuori terra, vitale'), hint: 'ES 28b', make: (a, n) => bld(a, n, '28b', 15, 15) },
+  { id: 'polnv', group: N_('Edifici (ES)'), label: N_('Deposito POL fuori terra, non vitale'), hint: 'ES 28c', make: (a, n) => bld(a, n, '28c', 15, 15) },
+  { id: 'r21', group: N_('Linee (ES)'), label: N_('Strada/ferrovia, bassa densità'), hint: N_('ES 21 (< 1000 veicoli/g)'), make: (a, n) => lin(a, n, 'es', '21') },
+  { id: 'r22', group: N_('Linee (ES)'), label: N_('Strada/ferrovia, media densità'), hint: N_('ES 22 (1000–5000 veicoli/g)'), make: (a, n) => lin(a, n, 'es', '22') },
+  { id: 'r23', group: N_('Linee (ES)'), label: N_('Strada/ferrovia, alta densità'), hint: N_('ES 23 (≥ 5000 veicoli/g)'), make: (a, n) => lin(a, n, 'es', '23') },
+  { id: 'p27a', group: N_('Linee (ES)'), label: N_('Elettrodotto, rete primaria'), hint: 'ES 27a', make: (a, n) => lin(a, n, 'es', '27a') },
+  { id: 'p27b', group: N_('Linee (ES)'), label: N_('Elettrodotto, rete normale'), hint: 'ES 27b', make: (a, n) => lin(a, n, 'es', '27b') },
+  { id: 'p27c', group: N_('Linee (ES)'), label: N_('Elettrodotto, rete minore'), hint: 'ES 27c', make: (a, n) => lin(a, n, 'es', '27c') },
+  { id: 'pipe', group: N_('Linee (ES)'), label: N_('Oleodotto protetto o interrato'), hint: 'ES 28a', make: (a, n) => lin(a, n, 'es', '28a') },
+  { id: 'road', group: N_('Altro'), label: N_('Strada interna'), hint: N_('viabilità del sito, non è un ES'), make: (a, n) => lin(a, n, 'road', null) },
+  { id: 'fence', group: N_('Altro'), label: N_('Recinzione / confine'), hint: N_('non è un ES'), make: (a, n) => lin(a, n, 'fence', null) },
+  { id: 'barr', group: N_('Altro'), label: N_('Barricata (grafica)'), hint: N_('Fase 1: solo disegno; l’effetto si imposta sul magazzino'), make: (a, n) => lin(a, n, 'barricade', null) },
 ];
 
 export const BUILDING_ES: EsRow[] = ['12', '13', '14', '15', '16', '17', '18', '19', '20', '24', '25', '26a', '26b', '28a', '28b', '28c'];
 export const LINE_ES: EsRow[] = ['21', '22', '23', '27a', '27b', '27c', '28a', '28b', '28c'];
 
 export const STRUCT_NAME: Record<StructKind, string> = {
-  ecm: 'ECM — magazzino coperto di terra (Table 1)', heavy: 'Pareti pesanti (Table 2)',
-  medium: 'Pareti medie (Table 3)', light: 'Struttura leggera / catasta / veicolo (Table 4)',
+  ecm: N_('ECM — magazzino coperto di terra (Table 1)'), heavy: N_('Pareti pesanti (Table 2)'),
+  medium: N_('Pareti medie (Table 3)'), light: N_('Struttura leggera / catasta / veicolo (Table 4)'),
 };
 export const ECM_NAME: Record<EcmClass, string> = {
-  '7bar': 'Conforme Part II, 7 bar (ES 1–3)', '3bar': 'Conforme Part II, 3 bar (ES 4–6)',
-  'nc-hv': 'Non conforme, testata/porte resistenti a proiezioni HV (ES 7 / 9–10)',
-  'nc-barr': 'Non conforme, barricata alla porta (ES 8 / 9–10)',
-  nc: 'Non conforme, testata/porte resistenti a fuoco e LV (ES 9–11)',
+  '7bar': N_('Conforme Part II, 7 bar (ES 1–3)'), '3bar': N_('Conforme Part II, 3 bar (ES 4–6)'),
+  'nc-hv': N_('Non conforme, testata/porte resistenti a proiezioni HV (ES 7 / 9–10)'),
+  'nc-barr': N_('Non conforme, barricata alla porta (ES 8 / 9–10)'),
+  nc: N_('Non conforme, testata/porte resistenti a fuoco e LV (ES 9–11)'),
 };
 
 /* ---- persistenza ---- */
@@ -195,9 +196,9 @@ export function serialize(p: Project): string {
 }
 export function parseProject(text: string): Project {
   const o = JSON.parse(text);
-  if (o?.format !== 'qd-site-tool') throw new Error('Il file non è un progetto QD (campo "format" mancante).');
-  if (o.version !== 1 && o.version !== 2) throw new Error(`Versione di progetto non supportata: ${o.version}`);
-  if (!Array.isArray(o.objects)) throw new Error('Progetto senza "objects".');
+  if (o?.format !== 'qd-site-tool') throw new Error(t('Il file non è un progetto QD (campo "format" mancante).'));
+  if (o.version !== 1 && o.version !== 2) throw new Error(t('Versione di progetto non supportata: {v}', { v: o.version }));
+  if (!Array.isArray(o.objects)) throw new Error(t('Progetto senza "objects".'));
   // v1 → v2: campi nuovi con i valori di default
   return {
     ...emptyProject(), ...o, version: 2,

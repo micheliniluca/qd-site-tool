@@ -4,6 +4,7 @@ import { rectCorners, type Vec } from './geometry';
 import type { SiteEval } from './evaluate';
 import type { Safeguard } from './safeguard';
 import type { Envelope } from './envelope';
+import { t } from '../i18n';
 
 export const PAPERS: Record<string, [number, number]> = { A4: [297, 210], A3: [420, 297], A2: [594, 420], A1: [841, 594], A0: [1189, 841] };
 export const SCALES = [200, 500, 1000, 2000, 2500, 5000, 10000, 25000];
@@ -20,7 +21,7 @@ export interface PrintOptions {
   date?: string;
 }
 
-const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+const esc = (x: string) => x.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 
 export function sheetSize(o: Pick<PrintOptions, 'paper' | 'landscape'>): [number, number] {
   const [a, b] = PAPERS[o.paper] ?? PAPERS.A3;
@@ -66,15 +67,15 @@ export function buildPrintSvg(p: Project, site: SiteEval, safeguards: Map<string
     const m = p.objects.find((x) => x.id === id);
     out.push(`<polygon points="${pts(sg.pts)}" fill="none" stroke="#7a3db8" stroke-width="0.35" stroke-dasharray="3 1.2"/>`);
     const top = sg.pts.reduce((a, q) => (q.y > a.y ? q : a), sg.pts[0]);
-    const t = P(top);
-    out.push(`<text x="${t.x}" y="${t.y - 1}" font-size="2.2" fill="#7a3db8" text-anchor="middle">${esc(`${o.sgLabel} ${m?.name ?? ''}: ${sg.label}`)}</text>`);
+    const tp = P(top);
+    out.push(`<text x="${tp.x}" y="${tp.y - 1}" font-size="2.2" fill="#7a3db8" text-anchor="middle">${esc(`${o.sgLabel} ${m?.name ?? ''}: ${sg.label}`)}</text>`);
   }
   // inviluppo
   if (o.envelope?.rings.length) {
     const d = o.envelope.rings.map((r) => 'M' + r.map((q) => { const s = P(q); return `${s.x.toFixed(2)},${s.y.toFixed(2)}`; }).join('L') + 'Z').join(' ');
     out.push(`<path d="${d}" fill="none" stroke="#5a1f99" stroke-width="0.6" stroke-dasharray="5 1.5"/>`);
-    const t = P(o.envelope.rings.flat().reduce((a, q) => (q.y > a.y ? q : a)));
-    out.push(`<text x="${t.x}" y="${t.y - 1.2}" font-size="2.6" font-weight="bold" fill="#5a1f99" text-anchor="middle">${esc(`Inviluppo ${o.sgLabel}`)}</text>`);
+    const tp = P(o.envelope.rings.flat().reduce((a, q) => (q.y > a.y ? q : a)));
+    out.push(`<text x="${tp.x}" y="${tp.y - 1.2}" font-size="2.6" font-weight="bold" fill="#5a1f99" text-anchor="middle">${esc(t('Inviluppo {sg}', { sg: o.sgLabel }))}</text>`);
   }
   // siti unici
   for (const g of site.groups) for (const l of g.links) {
@@ -99,7 +100,7 @@ export function buildPrintSvg(p: Project, site: SiteEval, safeguards: Map<string
       out.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#222" stroke-width="0.8"/>`);
     }
     const ctr = P({ x: x.cx, y: x.cy });
-    const sub = x.kind === 'magazine' ? (() => { const l = magazineLoad(x); return l.neqQd >= 1 ? `${Math.round(l.neqQd)} kg` : 'vuoto'; })() : `ES ${x.es}`;
+    const sub = x.kind === 'magazine' ? (() => { const l = magazineLoad(x); return l.neqQd >= 1 ? `${Math.round(l.neqQd)} kg` : t('vuoto'); })() : `ES ${x.es}`;
     out.push(`<text x="${ctr.x}" y="${ctr.y - Math.max(x.w, x.d) * k / 2 - 1}" font-size="2.3" font-weight="bold" text-anchor="middle">${esc(x.name)}</text>`);
     out.push(`<text x="${ctr.x}" y="${ctr.y + Math.max(x.w, x.d) * k / 2 + 2.4}" font-size="1.8" text-anchor="middle" fill="#444">${esc(sub)}</text>`);
   }
@@ -119,13 +120,13 @@ export function buildPrintSvg(p: Project, site: SiteEval, safeguards: Map<string
   out.push(`<rect x="${mx}" y="${ty}" width="${fw}" height="${tbH - 2}" fill="none" stroke="#000" stroke-width="0.4"/>`);
   out.push(`<line x1="${mx + fw * 0.55}" y1="${ty}" x2="${mx + fw * 0.55}" y2="${ty + tbH - 2}" stroke="#000" stroke-width="0.25"/>`);
   out.push(`<text x="${mx + 3}" y="${ty + 7}" font-size="4.5" font-weight="bold">${esc(o.title)}</text>`);
-  out.push(`<text x="${mx + 3}" y="${ty + 13}" font-size="3">${esc(`Planimetria QD — linee ${o.sgLabel} — scala 1:${o.scale} su ${o.paper}`)}</text>`);
-  out.push(`<text x="${mx + 3}" y="${ty + 19}" font-size="2.6">${esc(`Stato del sito: ${site.status === 'ok' ? 'conforme' : site.status === 'ko' ? 'NON conforme' : site.status === 'acc' ? 'conforme con rischi accettati' : 'da verificare'} · ${site.pairs.length} coppie · NEQ totale ${Math.round(site.neqTot)} kg`)}</text>`);
-  out.push(`<text x="${mx + 3}" y="${ty + 25}" font-size="2.4" fill="#444">AASTP-1 Edition D Version 1 (nov. 2025) — distanze tra i punti più vicini (Part I §1.3.2.2)</text>`);
-  out.push(`<text x="${mx + fw * 0.55 + 3}" y="${ty + 8}" font-size="5" font-weight="bold" fill="#b00">BOZZA</text>`);
-  out.push(`<text x="${mx + fw * 0.55 + 3}" y="${ty + 14}" font-size="2.6" fill="#b00">da verificare e firmare a cura di personale qualificato</text>`);
-  out.push(`<text x="${mx + fw * 0.55 + 3}" y="${ty + 20}" font-size="2.6">${esc(`Data: ${o.date ?? new Date().toISOString().slice(0, 10)}${o.author ? ` · Redatto: ${o.author}` : ''}`)}</text>`);
-  out.push(`<text x="${mx + fw * 0.55 + 3}" y="${ty + 26}" font-size="2.6">Verificato: ____________________   Approvato: ____________________</text>`);
+  out.push(`<text x="${mx + 3}" y="${ty + 13}" font-size="3">${esc(t('Planimetria QD — linee {sg} — scala 1:{scale} su {paper}', { sg: o.sgLabel, scale: o.scale, paper: o.paper }))}</text>`);
+  out.push(`<text x="${mx + 3}" y="${ty + 19}" font-size="2.6">${esc(t('Stato del sito: {st} · {n} coppie · NEQ totale {neq} kg', { st: site.status === 'ok' ? t('conforme') : site.status === 'ko' ? t('NON conforme') : site.status === 'acc' ? t('conforme con rischi accettati') : t('da verificare'), n: site.pairs.length, neq: Math.round(site.neqTot) }))}</text>`);
+  out.push(`<text x="${mx + 3}" y="${ty + 25}" font-size="2.4" fill="#444">${esc(t('AASTP-1 Edition D Version 1 (nov. 2025) — distanze tra i punti più vicini (Part I §1.3.2.2)'))}</text>`);
+  out.push(`<text x="${mx + fw * 0.55 + 3}" y="${ty + 8}" font-size="5" font-weight="bold" fill="#b00">${t('BOZZA')}</text>`);
+  out.push(`<text x="${mx + fw * 0.55 + 3}" y="${ty + 14}" font-size="2.6" fill="#b00">${esc(t('da verificare e firmare a cura di personale qualificato'))}</text>`);
+  out.push(`<text x="${mx + fw * 0.55 + 3}" y="${ty + 20}" font-size="2.6">${esc(t('Data: {date}', { date: o.date ?? new Date().toISOString().slice(0, 10) }) + (o.author ? t(' · Redatto: {author}', { author: o.author }) : ''))}</text>`);
+  out.push(`<text x="${mx + fw * 0.55 + 3}" y="${ty + 26}" font-size="2.6">${esc(t('Verificato: ____________________   Approvato: ____________________'))}</text>`);
   out.push(`</svg>`);
   return out.join('\n');
 }

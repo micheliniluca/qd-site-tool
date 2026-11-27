@@ -2,6 +2,7 @@
    Metodo: bisezione sulla quantità, rieseguendo siti unici e verifica delle coppie del magazzino. */
 import { checkCompat, type Cg, type CompatIssue, type HdFull } from '../engine/mixing';
 import { computeGroups, evaluateGroupPairs, type PairEval } from './evaluate';
+import { t } from '../i18n';
 import { magazineCgs, magazineLoad, newItem, type Item, type Magazine, type Project } from './model';
 
 /** true se nessuna coppia con PES nel sito unico del magazzino è non conforme o fuori dal campo delle formule
@@ -66,8 +67,8 @@ export interface Placement {
 
 export function withDelivery(m: Magazine, d: Delivery, neq: number): Magazine {
   const base: Item[] = m.contentMode === 'inventory' ? (m.items ?? [])
-    : m.neq >= 1 ? [newItem({ id: 'base', descr: 'Contenuto attuale', hd: m.hd, cg: 'D', qty: 1, neqUnit: m.neq, mce: m.mce })] : [];
-  return { ...m, contentMode: 'inventory', items: [...base, newItem({ id: 'delivery', descr: d.descr || 'Consegna', hd: d.hd, cg: d.cg, qty: 1, neqUnit: neq, mce: d.mce })] };
+    : m.neq >= 1 ? [newItem({ id: 'base', descr: t('Contenuto attuale'), hd: m.hd, cg: 'D', qty: 1, neqUnit: m.neq, mce: m.mce })] : [];
+  return { ...m, contentMode: 'inventory', items: [...base, newItem({ id: 'delivery', descr: d.descr || t('Consegna'), hd: d.hd, cg: d.cg, qty: 1, neqUnit: neq, mce: d.mce })] };
 }
 
 export function placeDelivery(p: Project, m: Magazine, d: Delivery): Placement {

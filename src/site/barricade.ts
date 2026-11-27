@@ -1,6 +1,7 @@
 /* Barricate di terra: verifica in sezione (Part II §2.2.3.2, Fig. 2-2/2-3) e in pianta (lunghezza, §2.2.3.2 "Length of Barricade").
    Coordinate della sezione: x lungo la congiungente delle due cataste, z quota (m).
    Catasta A occupa x ∈ [−wA, 0], catasta B x ∈ [gap, gap + wB]; terreno piano sotto le cataste, lineare tra le due. */
+import { N_, t } from '../i18n';
 import { add, cross, mul, rectCorners, sub, v, type Rect, type Vec } from './geometry';
 
 export interface StackSection { w: number; h: number; z: number; roof: boolean }
@@ -18,7 +19,7 @@ export interface BarricadeSectionInput {
 }
 
 export const DEFAULT_SECTION: BarricadeSectionInput = {
-  name: 'Sezione 1', gap: 12, a: { w: 6, h: 3, z: 0, roof: false }, b: { w: 6, h: 3, z: 0, roof: false },
+  name: N_('Sezione 1'), gap: 12, a: { w: 6, h: 3, z: 0, roof: false }, b: { w: 6, h: 3, z: 0, roof: false },
   x0: 2.4, base: 7.2, top: 1.0, h: 4.0, wall: null, neq: 1000,
 };
 
@@ -64,8 +65,8 @@ export function materialLength(s: BarricadeSectionInput, p: Vec, q: Vec, N = 600
   const d = sub(q, p);
   let sum = 0;
   for (let i = 0; i < N; i++) {
-    const t = (i + 0.5) / N;
-    const x = add(p, mul(d, t));
+    const tp = (i + 0.5) / N;
+    const x = add(p, mul(d, tp));
     // le cataste non sono materiale di barricata
     if ((x.x < 0 && x.x > -s.a.w) || (x.x > s.gap && x.x < s.gap + s.b.w)) continue;
     if (wall && inConvex(x, wall)) sum += 4;
@@ -99,28 +100,28 @@ export function checkSection(s: BarricadeSectionInput): SectionResult {
   const mk = (from?: 'A' | 'B') => {
     const { A, B, on } = pointsAB(s, from);
     const ab = materialLength(s, A, B);
-    const abc: LineCheck = { p: A, q: B, length: ab, required: 2.4, ok: ab >= 2.4 - 1e-6, note: 'AB ≥ 2,4 m (§2.2.3.2.2.a.(4))' };
+    const abc: LineCheck = { p: A, q: B, length: ab, required: 2.4, ok: ab >= 2.4 - 1e-6, note: t('AB ≥ 2,4 m (§2.2.3.2.2.a.(4))') };
     let cd: LineCheck | null = null;
     if (!individual) {
-      if (sloping && !contiguous) notes.push('Terreno in pendenza, cataste non contigue a distanza < 5·Q^(1/3): lo scostamento di 0,30 m non si applica (§2.2.3.2.2.b.(5)).');
+      if (sloping && !contiguous) notes.push(t('Terreno in pendenza, cataste non contigue a distanza < 5·Q^(1/3): lo scostamento di 0,30 m non si applica (§2.2.3.2.2.b.(5)).'));
       else {
         const C = v(A.x, A.y + 0.3), D = v(B.x, B.y + 0.3);
         const l = materialLength(s, C, D);
-        cd = { p: C, q: D, length: l, required: 1.0, ok: l >= 1.0 - 1e-6, note: 'CD (0,30 m sopra AB) ≥ 1,0 m (§2.2.3.2.2.b.(3)/(4))' };
+        cd = { p: C, q: D, length: l, required: 1.0, ok: l >= 1.0 - 1e-6, note: t('CD (0,30 m sopra AB) ≥ 1,0 m (§2.2.3.2.2.b.(3)/(4))') };
       }
     }
     return { from: on, ab: abc, cd };
   };
   const checks = individual ? [mk('A'), mk('B')] : [mk()];
-  if (individual) notes.push(`Separazione ${s.gap.toFixed(1)} m ≥ 5·Q^(1/3) = ${sep5.toFixed(1)} m: verifica rispetto a ciascuna catasta (§2.2.3.2.2.c).`);
+  if (individual) notes.push(t('Separazione {gap} m ≥ 5·Q^(1/3) = {sep} m: verifica rispetto a ciascuna catasta (§2.2.3.2.2.c).', { gap: s.gap.toFixed(1), sep: sep5.toFixed(1) }));
   // cratere (§2.2.3.3.3): r = ½·NEQ^(1/3) dal centro dell'esplosivo (catasta A); la barricata non va scalzata oltre 1/3 della base
   const r = 0.5 * Math.cbrt(Math.max(s.neq, 0));
   const reach = -s.a.w / 2 + r;
   const undermined = Math.max(0, Math.min(s.base, reach - s.x0));
   const allowed = s.base / 3;
   const crater = { r, reach, undermined, allowed, ok: undermined <= allowed + 1e-9 };
-  if (s.x0 < 0 || s.x0 + s.base > s.gap) notes.push('La barricata non sta tra le due cataste: controllare x0 e larghezza di base.');
-  if (s.top > s.base) notes.push('Larghezza in sommità maggiore della base.');
+  if (s.x0 < 0 || s.x0 + s.base > s.gap) notes.push(t('La barricata non sta tra le due cataste: controllare x0 e larghezza di base.'));
+  if (s.top > s.base) notes.push(t('Larghezza in sommità maggiore della base.'));
   const ok = checks.every((c) => c.ab.ok && (c.cd?.ok ?? true)) && crater.ok;
   return { ground: groundFn(s), barricade: barricadePoly(s), wallPoly: wallPoly(s), checks, sep5, individual, sloping, crater, ok, notes };
 }
@@ -166,12 +167,12 @@ export function checkLength(a: Rect, b: Rect, barricade: Vec[], margin = 1.0): L
       const e = sub(s2, s1);
       const den = cross(d, e);
       if (Math.abs(den) < 1e-12) continue;
-      const t = cross(sub(s1, p), e) / den;     // parametro sulla retta tra le cataste
+      const tl = cross(sub(s1, p), e) / den;     // parametro sulla retta tra le cataste
       const u = cross(sub(s1, p), d) / den;     // parametro sul tratto di barricata
       if (u < -1e-9 || u > 1 + 1e-9) continue;
-      const hit = add(p, mul(d, t));
+      const hit = add(p, mul(d, tl));
       const sAlong = cum[i] + u * Math.hypot(e.x, e.y);
-      if (!best || (t >= 0 && t <= 1 && !best.between)) best = { s: sAlong, hit, between: t >= 0 && t <= 1 };
+      if (!best || (tl >= 0 && tl <= 1 && !best.between)) best = { s: sAlong, hit, between: tl >= 0 && tl <= 1 };
     }
     if (!best) return { line, hit: null, beyond: -Infinity };
     return { line, hit: best.hit, beyond: NaN, s: best.s } as { line: [Vec, Vec]; hit: Vec; beyond: number; s: number };
@@ -185,8 +186,8 @@ export function checkLength(a: Rect, b: Rect, barricade: Vec[], margin = 1.0): L
     return { line: x.line, hit: x.hit, beyond };
   });
   const ok = out.length === 2 && out.every((x) => x.hit && x.beyond >= margin - 1e-9);
-  const note = out.length !== 2 ? 'Le due cataste si sovrappongono: verifica non applicabile.'
-    : out.some((x) => !x.hit) ? 'La barricata non intercetta entrambe le rette tra gli estremi delle cataste.'
-    : ok ? `La barricata supera entrambe le rette di almeno ${margin.toFixed(1)} m.` : `La barricata deve proseguire almeno ${margin.toFixed(1)} m oltre ciascuna retta.`;
+  const note = out.length !== 2 ? t('Le due cataste si sovrappongono: verifica non applicabile.')
+    : out.some((x) => !x.hit) ? t('La barricata non intercetta entrambe le rette tra gli estremi delle cataste.')
+    : ok ? t('La barricata supera entrambe le rette di almeno {m} m.', { m: margin.toFixed(1) }) : t('La barricata deve proseguire almeno {m} m oltre ciascuna retta.', { m: margin.toFixed(1) });
   return { ok, sides: out, note };
 }

@@ -1,5 +1,6 @@
 /* Revisioni approvate del piano: istantanea congelata con i risultati, confronto tra versioni, ripristino. */
 import { evaluateSite, type SiteEval, type Status } from './evaluate';
+import { N_, t } from '../i18n';
 import { magazineLoad, newId, type Project, type SiteObject } from './model';
 
 export type Snapshot = Pick<Project, 'objects' | 'choices' | 'sharedCover' | 'risks' | 'options' | 'barricadeSections'>;
@@ -34,7 +35,7 @@ export function summarize(p: Pick<Project, 'objects'>, site: SiteEval): RevSumma
 export function freeze(p: Project, meta: { title: string; author: string; note: string; date?: string }): Revision {
   const n = (p.revisions ?? []).reduce((m, r) => Math.max(m, r.n), 0) + 1;
   return {
-    id: newId('r'), n, title: meta.title || `Revisione ${n}`, author: meta.author, note: meta.note,
+    id: newId('r'), n, title: meta.title || t('Revisione {n}', { n }), author: meta.author, note: meta.note,
     date: meta.date ?? new Date().toISOString().slice(0, 10), snapshot: snapshotOf(p), summary: summarize(p, evaluateSite(p)),
   };
 }
@@ -58,9 +59,9 @@ export interface Diff {
 }
 
 const FIELD_IT: Record<string, string> = {
-  cx: 'posizione', cy: 'posizione', w: 'dimensioni', d: 'dimensioni', az: 'orientamento', pts: 'tracciato', name: 'nome',
-  struct: 'costruzione', ecmClass: 'classe ECM', roof: 'tetto', frontDoor: 'porta', barricaded: 'barricata', hd: 'HD', neq: 'NEQ', mce: 'MCE',
-  vol: 'volume', contentMode: 'contenuto', items: 'inventario', vol500: 'IBD ridotte', note6As11: 'nota 6', es: 'tipo ES', role: 'ruolo', note: 'note',
+  cx: N_('posizione'), cy: N_('posizione'), w: N_('dimensioni'), d: N_('dimensioni'), az: N_('orientamento'), pts: N_('tracciato'), name: N_('nome'),
+  struct: N_('costruzione'), ecmClass: N_('classe ECM'), roof: N_('tetto'), frontDoor: N_('porta'), barricaded: N_('barricata'), hd: 'HD', neq: 'NEQ', mce: 'MCE',
+  vol: N_('volume'), contentMode: N_('contenuto'), items: N_('inventario'), vol500: N_('IBD ridotte'), note6As11: N_('nota 6'), es: N_('tipo ES'), role: N_('ruolo'), note: N_('note'),
 };
 
 export function diffObjects(a: SiteObject[], b: SiteObject[]): ObjChange[] {
@@ -72,7 +73,7 @@ export function diffObjects(a: SiteObject[], b: SiteObject[]): ObjChange[] {
     const p = ma.get(o.id);
     if (!p) continue;
     const keys = new Set([...Object.keys(p), ...Object.keys(o)]);
-    const fields = [...new Set([...keys].filter((k) => JSON.stringify((p as never)[k]) !== JSON.stringify((o as never)[k])).map((k) => FIELD_IT[k] ?? k))];
+    const fields = [...new Set([...keys].filter((k) => JSON.stringify((p as never)[k]) !== JSON.stringify((o as never)[k])).map((k) => (FIELD_IT[k] ? t(FIELD_IT[k]) : k)))];
     if (fields.length) out.push({ id: o.id, name: o.name, kind: o.kind, change: 'modificato', fields });
   }
   return out;
@@ -86,10 +87,10 @@ export function diffSummaries(before: RevSummary, after: RevSummary, objsBefore:
   for (const k of keys) {
     const b = before.pairs[k] ?? null, a = after.pairs[k] ?? null;
     let what = '';
-    if (!b) what = a && bad(a.status) ? 'nuova coppia non conforme' : 'nuova coppia';
-    else if (!a) what = 'coppia eliminata';
-    else if (b.status !== a.status) what = bad(a.status) && !bad(b.status) ? 'peggiorata' : !bad(a.status) && bad(b.status) ? 'risolta' : 'esito cambiato';
-    else if (b.req !== a.req || Math.abs(b.dist - a.dist) > 0.05) what = 'distanze cambiate';
+    if (!b) what = a && bad(a.status) ? N_('nuova coppia non conforme') : N_('nuova coppia');
+    else if (!a) what = N_('coppia eliminata');
+    else if (b.status !== a.status) what = bad(a.status) && !bad(b.status) ? N_('peggiorata') : !bad(a.status) && bad(b.status) ? N_('risolta') : N_('esito cambiato');
+    else if (b.req !== a.req || Math.abs(b.dist - a.dist) > 0.05) what = N_('distanze cambiate');
     if (what) pairs.push({ key: k, pes: (a ?? b)!.pes, es: (a ?? b)!.es, before: b, after: a, what });
   }
   const order = ['peggiorata', 'nuova coppia non conforme', 'esito cambiato', 'risolta', 'distanze cambiate', 'nuova coppia', 'coppia eliminata'];

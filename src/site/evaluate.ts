@@ -8,9 +8,10 @@ import {
   clipShape, lineShape, polyShape, rectCorners, sectorRegions, shapeDistance,
   type Rect, type SectorName, type SectorRegion, type Shape, type Vec,
 } from './geometry';
+import { N_, t } from '../i18n';
 import { isRect, magazineLines, magazineLoad, type Magazine, type Project, type SiteObject } from './model';
 
-export const SECTOR_IT: Record<SectorName, string> = { front: 'fronte', side: 'lato', rear: 'retro' };
+export const SECTOR_IT: Record<SectorName, string> = { front: N_('fronte'), side: N_('lato'), rear: N_('retro') };
 
 /* ---------- colonna PES ---------- */
 
@@ -26,7 +27,7 @@ export function pesScheme(m: Magazine, eff: Effect): { front: number; rear: numb
   const hd12 = eff === 'p121' || eff === 'p122';
   if (m.struct === 'ecm') return hd12 ? { front: 100, rear: 135, ref: '§11, Fig. A-2' } : { front: 150, rear: 135, ref: '§7, Fig. A-1' };
   if (m.struct === 'heavy' && m.roof && m.frontDoor)
-    return hd12 ? { front: 100, rear: 135, ref: '§11, Fig. A-2' } : { front: 150, rear: 135, ref: '§7 per analogia (porta sul fronte): ipotesi cautelativa' };
+    return hd12 ? { front: 100, rear: 135, ref: '§11, Fig. A-2' } : { front: 150, rear: 135, ref: t('§7 per analogia (porta sul fronte): ipotesi cautelativa') };
   return null;
 }
 
@@ -62,7 +63,7 @@ export function esRows(es: SiteObject, pesShape: Shape): EsCase[] {
   if (es.kind === 'line') return es.role === 'es' && es.es ? [{ row: es.es, sector: null, why: '' }] : [];
   const m = es;
   // edificio di processo che come esposto è un'officina esplosivi (ES 18–20, Part I §1.3.1.13)
-  if (m.struct !== 'ecm' && m.esAs) return [{ row: m.esAs, sector: null, why: 'officina esplosivi (impostato sul magazzino)' }];
+  if (m.struct !== 'ecm' && m.esAs) return [{ row: m.esAs, sector: null, why: t('officina esplosivi (impostato sul magazzino)') }];
   switch (m.struct) {
     case 'heavy': return [{ row: m.roof ? '12' : '13', sector: null, why: '' }];
     case 'medium': return [{ row: m.barricaded ? '14' : '15', sector: null, why: '' }];
@@ -80,7 +81,7 @@ export function esRows(es: SiteObject, pesShape: Shape): EsCase[] {
     else row = g.name === 'rear' ? '9' : '10';
     if (seen.has(row)) continue;
     seen.add(row);
-    out.push({ row, sector: g.name, why: `PES nel settore ${SECTOR_IT[g.name]} dell'ES` });
+    out.push({ row, sector: g.name, why: t("PES nel settore {sec} dell'ES", { sec: t(SECTOR_IT[g.name]) }) });
   }
   return out;
 }
@@ -176,14 +177,14 @@ export function evaluateSitePair(pes: Magazine, es: SiteObject, opts: PairOpts |
     if (o.shared && EFFMAP[load.hd].some(([e]) => e === 'blast')) {
       const ref = o.shared === '34' ? 'BD5' : 'BD4';
       const Q = EFFMAP[load.hd].find(([e]) => e === 'blast')![1] === 'NEQ' ? load.neq : load.mce;
-      const opt: Opt = { t: 'f', ref, notes: ['Part I §1.3.6.6.3 terrapieno condiviso'] };
+      const opt: Opt = { t: 'f', ref, notes: [t('Part I §1.3.6.6.3 terrapieno condiviso')] };
       const r = evalOpt(opt, Q);
       const req = r.oor ? null : (r.dr as number);
       const res: EffectResult = { eff: 'blast', qtype: Q === load.neq ? 'NEQ' : 'MCE', Q, key: `shared|${ref}`, merged: false, raw: `${ref} (§1.3.6.6.3)`, opts: [{ o: opt, i: 0 }], sel: 0, o: opt, r };
       cases.push({
         eff: 'blast', load, col: -1, colCode: '—', pesSector: null, scheme: null, es: { row: escases[0]?.row ?? ('1' as EsRow), sector: null, why: '' },
         dist: whole.d, pa: whole.pa, pb: whole.pb, res, req, status: req == null ? 'nd' : whole.d + DIST_TOL >= req ? 'ok' : 'ko',
-        margin: req == null ? null : whole.d - req, extra: `Terrapieno condiviso (${o.shared === '34' ? '≥ 3/4' : '1/2–3/4'} dell'altezza)`,
+        margin: req == null ? null : whole.d - req, extra: t("Terrapieno condiviso ({lvl} dell'altezza)", { lvl: o.shared === '34' ? '≥ 3/4' : '1/2–3/4' }),
       });
     }
   }
@@ -323,9 +324,9 @@ export function evaluateSite(p: Project): SiteEval {
 
 /** Testo di riferimento della cella (tabella, colonna, ES, pagina). */
 export function cellRef(table: TableId, col: number, es: string): string {
-  if (col < 0) return 'Part I §1.3.6.6.3 (terrapieno condiviso)';
+  if (col < 0) return t('Part I §1.3.6.6.3 (terrapieno condiviso)');
   const row = MATRIX.tables[table].rows[es];
-  return `Annex I-A, Table ${table} col. (${COLCODE[table][col]}), ES ${es} — pag. ${row.annex} (PDF ${row.page})`;
+  return t('Annex I-A, Table {table} col. ({col}), ES {es} — pag. {annex} (PDF {page})', { table, col: COLCODE[table][col], es, annex: row.annex, page: row.page });
 }
 
 export type { SectorRegion };
