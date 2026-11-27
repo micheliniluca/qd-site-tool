@@ -14,7 +14,10 @@ casi/
 extraction/raw.json
 
 # vecchie versioni e note di lavoro
-legacy/
+legacy/*
+!legacy/engine/
+legacy/engine/*
+!legacy/engine/qd_formulas.js
 qd-site-tool/
 qd-site-tool.zip
 HANDOFF.md
