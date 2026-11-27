@@ -1,0 +1,23 @@
+# dipendenze e build
+node_modules
+dist
+*.local
+
+# dati dei clienti: MAI su GitHub
+casi/
+*CONFIDENTIAL*
+*.qdsite.json
+!Sito_di_esempio_fittizio_.qdsite.json
+
+# testo della norma NATO (distribuzione da verificare) ed estrazione grezza
+*.pdf
+extraction/raw.json
+
+# vecchie versioni e note di lavoro
+legacy/
+qd-site-tool/
+qd-site-tool.zip
+HANDOFF.md
+
+# impostazioni locali di Claude Code
+.claude/

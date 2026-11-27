@@ -1,0 +1,326 @@
+{
+ "format": "qd-site-tool",
+ "version": 2,
+ "edition": "AASTP-1 Ed. D V1",
+ "name": "Sito di esempio (fittizio)",
+ "created": "2026-11-24T07:25:02.124Z",
+ "modified": "2026-11-24T09:33:05.982Z",
+ "objects": [
+  {
+   "id": "mmwuddnhoh",
+   "kind": "magazine",
+   "name": "M1",
+   "cx": 0,
+   "cy": 0,
+   "w": 9,
+   "d": 26,
+   "az": 0,
+   "struct": "ecm",
+   "ecmClass": "7bar",
+   "roof": true,
+   "frontDoor": false,
+   "barricaded": false,
+   "hd": "1.1",
+   "neq": 20000,
+   "mce": 50,
+   "vol": "gt"
+  },
+  {
+   "id": "mmwuddnhoi",
+   "kind": "magazine",
+   "name": "M2",
+   "cx": 22,
+   "cy": 0,
+   "w": 9,
+   "d": 26,
+   "az": 0,
+   "struct": "ecm",
+   "ecmClass": "7bar",
+   "roof": true,
+   "frontDoor": false,
+   "barricaded": false,
+   "hd": "1.1",
+   "neq": 20000,
+   "mce": 50,
+   "vol": "gt"
+  },
+  {
+   "id": "mmwuddnhom",
+   "kind": "magazine",
+   "name": "M3",
+   "cx": 80,
+   "cy": 0,
+   "w": 9,
+   "d": 26,
+   "az": 0,
+   "struct": "ecm",
+   "ecmClass": "7bar",
+   "roof": true,
+   "frontDoor": false,
+   "barricaded": false,
+   "hd": "1.1",
+   "neq": 10000,
+   "mce": 50,
+   "vol": "gt",
+   "contentMode": "inventory",
+   "items": [
+    {
+     "id": "imwuddnhoj",
+     "descr": "Colpi 40 mm",
+     "hd": "1.2.1",
+     "cg": "E",
+     "qty": 20000,
+     "neqUnit": 0.12,
+     "mce": 12
+    },
+    {
+     "id": "imwuddnhok",
+     "descr": "Cariche di lancio",
+     "hd": "1.3.1",
+     "cg": "C",
+     "qty": 300,
+     "neqUnit": 10,
+     "mce": null
+    },
+    {
+     "id": "imwuddnhol",
+     "descr": "Cartucce 5,56",
+     "hd": "1.4",
+     "cg": "S",
+     "qty": 100000,
+     "neqUnit": 0.0016,
+     "mce": null
+    }
+   ]
+  },
+  {
+   "id": "mmwuddnhon",
+   "kind": "magazine",
+   "name": "M4",
+   "cx": 20,
+   "cy": 200,
+   "w": 9,
+   "d": 26,
+   "az": 180,
+   "struct": "ecm",
+   "ecmClass": "3bar",
+   "roof": true,
+   "frontDoor": false,
+   "barricaded": false,
+   "hd": "1.1",
+   "neq": 10000,
+   "mce": 50,
+   "vol": "gt"
+  },
+  {
+   "id": "mmwuddnhoo",
+   "kind": "magazine",
+   "name": "H1",
+   "cx": 330,
+   "cy": -60,
+   "w": 15,
+   "d": 25,
+   "az": 90,
+   "struct": "heavy",
+   "ecmClass": "7bar",
+   "roof": true,
+   "frontDoor": true,
+   "barricaded": false,
+   "hd": "1.1",
+   "neq": 4000,
+   "mce": 50,
+   "vol": "gt"
+  },
+  {
+   "id": "mmwuddnhop",
+   "kind": "magazine",
+   "name": "C1",
+   "cx": -170,
+   "cy": 60,
+   "w": 10,
+   "d": 10,
+   "az": 0,
+   "struct": "light",
+   "ecmClass": "7bar",
+   "roof": true,
+   "frontDoor": false,
+   "barricaded": false,
+   "hd": "1.2.2",
+   "neq": 2000,
+   "mce": 50,
+   "vol": "gt"
+  },
+  {
+   "id": "mmwuddnhoq",
+   "kind": "magazine",
+   "name": "P1",
+   "cx": -160,
+   "cy": -90,
+   "w": 12,
+   "d": 20,
+   "az": 0,
+   "struct": "medium",
+   "ecmClass": "7bar",
+   "roof": true,
+   "frontDoor": false,
+   "barricaded": false,
+   "hd": "1.1",
+   "neq": 0,
+   "mce": 50,
+   "vol": "gt"
+  },
+  {
+   "id": "bmwuddnhor",
+   "kind": "building",
+   "name": "Uffici deposito",
+   "cx": 160,
+   "cy": 210,
+   "w": 20,
+   "d": 12,
+   "az": 0,
+   "es": "26b"
+  },
+  {
+   "id": "bmwuddnhos",
+   "kind": "building",
+   "name": "Officina",
+   "cx": -60,
+   "cy": 230,
+   "w": 20,
+   "d": 12,
+   "az": 0,
+   "es": "18"
+  },
+  {
+   "id": "bmwuddnhot",
+   "kind": "building",
+   "name": "Cascina",
+   "cx": 760,
+   "cy": 420,
+   "w": 20,
+   "d": 12,
+   "az": 0,
+   "es": "24"
+  },
+  {
+   "id": "bmwuddnhou",
+   "kind": "building",
+   "name": "Scuola",
+   "cx": -900,
+   "cy": 250,
+   "w": 40,
+   "d": 25,
+   "az": 0,
+   "es": "25"
+  },
+  {
+   "id": "lmwuddnhov",
+   "kind": "line",
+   "name": "SP 12",
+   "role": "es",
+   "es": "22",
+   "pts": [
+    {
+     "x": -1100,
+     "y": -520
+    },
+    {
+     "x": -200,
+     "y": -470
+    },
+    {
+     "x": 600,
+     "y": -560
+    },
+    {
+     "x": 1200,
+     "y": -420
+    }
+   ]
+  },
+  {
+   "id": "lmwuddnhow",
+   "kind": "line",
+   "name": "Linea MT",
+   "role": "es",
+   "es": "27b",
+   "pts": [
+    {
+     "x": 700,
+     "y": -500
+    },
+    {
+     "x": 650,
+     "y": 900
+    }
+   ]
+  },
+  {
+   "id": "lmwuddnhox",
+   "kind": "line",
+   "name": "Recinzione",
+   "role": "fence",
+   "es": null,
+   "pts": [
+    {
+     "x": -330,
+     "y": -230
+    },
+    {
+     "x": 420,
+     "y": -230
+    },
+    {
+     "x": 420,
+     "y": 330
+    },
+    {
+     "x": -330,
+     "y": 330
+    },
+    {
+     "x": -330,
+     "y": -230
+    }
+   ]
+  }
+ ],
+ "background": null,
+ "choices": {},
+ "sharedCover": [],
+ "risks": {},
+ "options": {
+  "aggregate": true,
+  "fillWarn": 0.9
+ },
+ "barricadeSections": [
+  {
+   "name": "M2 – M3",
+   "gap": 49,
+   "a": {
+    "w": 6,
+    "h": 3,
+    "z": 0,
+    "roof": false
+   },
+   "b": {
+    "w": 6,
+    "h": 3,
+    "z": 0,
+    "roof": false
+   },
+   "x0": 9.8,
+   "base": 29.4,
+   "top": 1,
+   "h": 4,
+   "wall": null,
+   "neq": 20000
+  }
+ ],
+ "revisions": [],
+ "view": {
+  "x": 50,
+  "y": 170,
+  "k": 0.33260869565217394
+ }
+}
